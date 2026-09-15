@@ -1,4 +1,8 @@
-export const REPORT_API = 'http://127.0.0.1:5173/api/reports'
+import { BASE } from '../api/base'
+
+const ORIGIN = typeof window === 'undefined' ? '' : window.location.origin
+
+export const REPORT_API = `${ORIGIN}${BASE}/api/reports`
 
 export const REPORT_PROMPT = `你是「股票精灵」的研报助手。请根据用户给出的股票、板块或主题，生成一份完整的 HTML 分析报告，并调用本地开放接口写入游戏。
 
@@ -23,7 +27,7 @@ Content-Type: application/json
 失败返回：{"ok":false,"error":"..."}
 
 【调用注意】
-- 这是本机开发服务，只对 http://127.0.0.1:5173 开放。
+- 接口地址随部署环境变化，上面显示的是当前访问地址；本机开发时仅对 127.0.0.1 开放。
 - html 字段必须是字符串，不要再包一层 markdown 代码块。
 - 单份报告建议不超过 1.5MB。
 - 上传成功后，用户在游戏主菜单「分析报告」里就能看到。

@@ -1,3 +1,5 @@
+import { api } from './base'
+
 export interface ReportMeta {
   id: string
   title: string
@@ -20,21 +22,21 @@ async function readJson<T>(res: Response): Promise<T> {
 }
 
 export async function listReports(): Promise<ReportMeta[]> {
-  const res = await fetch('/api/reports', { headers: { Accept: 'application/json' } })
+  const res = await fetch(api('/api/reports'), { headers: { Accept: 'application/json' } })
   const json = await readJson<{ ok?: boolean; reports?: ReportMeta[]; error?: string }>(res)
   if (!res.ok || !json.ok) throw new Error(json.error || '读不到报告列表')
   return json.reports ?? []
 }
 
 export async function getReport(id: string): Promise<ReportDoc> {
-  const res = await fetch(`/api/reports/${encodeURIComponent(id)}`, { headers: { Accept: 'application/json' } })
+  const res = await fetch(api(`/api/reports/${encodeURIComponent(id)}`), { headers: { Accept: 'application/json' } })
   const json = await readJson<ReportDoc & { ok?: boolean; error?: string }>(res)
   if (!res.ok || json.ok === false) throw new Error(json.error || '报告不存在')
   return json
 }
 
 export async function createReport(input: { title?: string; html: string; source?: 'upload' | 'api' }) {
-  const res = await fetch('/api/reports', {
+  const res = await fetch(api('/api/reports'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify(input),
@@ -45,7 +47,7 @@ export async function createReport(input: { title?: string; html: string; source
 }
 
 export async function deleteReport(id: string) {
-  const res = await fetch(`/api/reports/${encodeURIComponent(id)}`, { method: 'DELETE' })
+  const res = await fetch(api(`/api/reports/${encodeURIComponent(id)}`), { method: 'DELETE' })
   const json = await readJson<{ ok?: boolean; error?: string }>(res)
   if (!res.ok || !json.ok) throw new Error(json.error || '删除失败')
 }

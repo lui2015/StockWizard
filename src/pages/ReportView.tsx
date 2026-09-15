@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getReport } from '../api/reports'
+import { api } from '../api/base'
 import { useGame } from '../store/gameStore'
 
 export function ReportView({ id }: { id: string }) {
@@ -38,7 +39,7 @@ export function ReportView({ id }: { id: string }) {
         <iframe
           className="report-frame"
           title={title}
-          src={`/api/reports/${encodeURIComponent(id)}/raw`}
+          src={api(`/api/reports/${encodeURIComponent(id)}/raw`)}
           sandbox="allow-same-origin"
         />
       )}
