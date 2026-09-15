@@ -1,3 +1,5 @@
+import { api } from './base'
+
 export interface MarketHit {
   id: string
   code: string
@@ -53,7 +55,7 @@ export function isCnOrHk(hit: EmSuggest) {
 export async function searchStocks(keyword: string): Promise<MarketHit[]> {
   const q = keyword.trim()
   if (!q) return []
-  const url = `/radar/search?input=${encodeURIComponent(q)}&type=14&count=20`
+  const url = api(`/radar/search?input=${encodeURIComponent(q)}&type=14&count=20`)
   const res = await fetch(url, { headers: { Accept: 'application/json' } })
   if (!res.ok) throw new Error('雷达信号中断')
   const text = await res.text()
@@ -177,7 +179,7 @@ async function fetchClist(fs: string, limit: number): Promise<MarketHit[]> {
     fs,
     fields: 'f12,f13,f14,f2,f3',
   })
-  const res = await fetch(`/radar/clist?${params}`, { headers: { Accept: 'application/json' } })
+  const res = await fetch(api(`/radar/clist?${params}`), { headers: { Accept: 'application/json' } })
   if (!res.ok) throw new Error('雷达信号中断')
   const json = (await res.json()) as {
     data?: { diff?: Record<string, Record<string, unknown>> | Array<Record<string, unknown>> }
@@ -293,9 +295,9 @@ function parseSeries(lines: string[], priceIndex = 1) {
 }
 
 export async function fetchLiveQuote(quoteId: string): Promise<LiveQuote | null> {
-  const quoteUrl = `/radar/quote?secid=${encodeURIComponent(quoteId)}&invt=2&fltt=2&fields=f43,f44,f45,f46,f47,f48,f50,f57,f58,f60,f108,f109,f116,f117,f127,f162,f163,f164,f167,f168,f169,f170,f171,f173,f183,f186,f187,f197`
-  const trendsUrl = `/radar/trends?secid=${encodeURIComponent(quoteId)}&ndays=1&iscr=0&fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58`
-  const klineUrl = `/radar/kline?secid=${encodeURIComponent(quoteId)}&klt=101&fqt=1&lmt=20&end=20500101&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55`
+  const quoteUrl = api(`/radar/quote?secid=${encodeURIComponent(quoteId)}&invt=2&fltt=2&fields=f43,f44,f45,f46,f47,f48,f50,f57,f58,f60,f108,f109,f116,f117,f127,f162,f163,f164,f167,f168,f169,f170,f171,f173,f183,f186,f187,f197`)
+  const trendsUrl = api(`/radar/trends?secid=${encodeURIComponent(quoteId)}&ndays=1&iscr=0&fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58`)
+  const klineUrl = api(`/radar/kline?secid=${encodeURIComponent(quoteId)}&klt=101&fqt=1&lmt=20&end=20500101&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55`)
 
   const [quoteRes, trendsRes, klineRes] = await Promise.allSettled([
     fetch(quoteUrl, { headers: { Accept: 'application/json' } }),
@@ -421,9 +423,9 @@ const TAPE_LIST: { id: string; group: TapeGroup; name: string; bar: string }[] =
 export const TAPE_BARS = Object.fromEntries(TAPE_LIST.map((item) => [item.id, item.bar]))
 
 export async function fetchMarketTape(): Promise<TapeIndex[]> {
-  const url = `/radar/ulist?fltt=2&invt=2&fields=f12,f13,f14,f2,f3,f4,f18&secids=${encodeURIComponent(
+  const url = api(`/radar/ulist?fltt=2&invt=2&fields=f12,f13,f14,f2,f3,f4,f18&secids=${encodeURIComponent(
     TAPE_LIST.map((item) => item.id).join(','),
-  )}`
+  )}`)
   const res = await fetch(url, { headers: { Accept: 'application/json' } })
   if (!res.ok) throw new Error('大盘信号中断')
   const json = (await res.json()) as {
@@ -455,7 +457,7 @@ export async function fetchMarketTape(): Promise<TapeIndex[]> {
 export async function fetchBatchQuotes(quoteIds: string[]): Promise<Record<string, LiveQuote>> {
   const ids = quoteIds.filter(Boolean)
   if (!ids.length) return {}
-  const url = `/radar/ulist?fltt=2&invt=2&fields=f12,f13,f14,f2,f3,f5,f6,f7,f8,f9,f10,f15,f16,f17,f18,f20,f21,f23&secids=${encodeURIComponent(ids.join(','))}`
+  const url = api(`/radar/ulist?fltt=2&invt=2&fields=f12,f13,f14,f2,f3,f5,f6,f7,f8,f9,f10,f15,f16,f17,f18,f20,f21,f23&secids=${encodeURIComponent(ids.join(','))}`)
   const res = await fetch(url, { headers: { Accept: 'application/json' } })
   if (!res.ok) return {}
   const json = (await res.json()) as {
