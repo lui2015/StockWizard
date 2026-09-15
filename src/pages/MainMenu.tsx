@@ -9,7 +9,6 @@ const ITEMS: { name: Screen['name']; title: string; desc: string }[] = [
   { name: 'grass', title: '野外草地', desc: '走入草丛，遭遇并尝试捕捉' },
   { name: 'trainer', title: '训练家证', desc: '收集进度、称号与存档' },
   { name: 'reports', title: '分析报告', desc: '上传 HTML 研报，或用接口交给 AI 写入' },
-  { name: 'settings', title: '说明书', desc: '玩法、音效与免责声明' },
 ]
 
 export function MainMenu() {

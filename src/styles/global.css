@@ -65,7 +65,6 @@ button {
 .press-start,
 .code-line,
 .quote-strip strong,
-.wild-name,
 .dex-row em {
   font-family: 'Press Start 2P', 'Noto Sans SC', sans-serif;
 }
@@ -1546,8 +1545,17 @@ button {
 
 .field.battling {
   height: auto;
-  min-height: 280px;
-  overflow: visible;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  padding: 12px 10px 14px;
+}
+
+.field.battling .battle {
+  position: relative;
+  inset: auto;
+  width: 100%;
 }
 
 .cloud {
@@ -1879,27 +1887,47 @@ button {
 }
 
 .wild-box {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: min(280px, 100%);
   background: var(--white);
   border: 4px solid var(--ink);
   box-shadow: 6px 6px 0 #0f380f;
-  padding: 10px 12px 12px;
+  padding: 12px 14px 12px;
   text-align: center;
-  min-width: 200px;
   position: relative;
   z-index: 11;
-  overflow: hidden;
+}
+
+.wild-sprite {
+  display: grid;
+  place-items: center;
+  min-height: 88px;
+}
+
+.wild-info {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  width: 100%;
 }
 
 .wild-name {
-  font-family: 'Press Start 2P', sans-serif;
-  font-size: 11px;
-  margin: 6px 0 4px;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  line-height: 1.3;
+  margin: 0;
 }
 
 .wild-name small {
   display: block;
-  margin-top: 6px;
-  font-size: 9px;
+  margin-top: 4px;
+  font-family: 'Press Start 2P', sans-serif;
+  font-size: 8px;
+  letter-spacing: 1px;
+  opacity: 0.55;
 }
 
 .wild-quote {
@@ -1907,13 +1935,15 @@ button {
   align-items: baseline;
   justify-content: center;
   gap: 8px;
-  margin: 0 0 8px;
-  font-size: 16px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
 
 .wild-quote small {
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .wild-box .type-row {
@@ -1921,7 +1951,7 @@ button {
 }
 
 .wild-box .rank-row {
-  margin-top: 8px;
+  width: 100%;
   text-align: left;
 }
 
@@ -2532,17 +2562,50 @@ button {
   .party-meta {
     grid-column: 2;
     grid-row: 1;
+    grid-template-columns: 1fr;
+    align-items: start;
+    row-gap: 6px;
+  }
+
+  .party-meta b {
+    flex-wrap: wrap;
+  }
+
+  .party-name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
   }
 
   .party-meta b small {
     flex: 0 0 auto;
   }
 
+  .party-quote {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    align-self: start;
+    text-align: left;
+    gap: 6px 8px;
+  }
+
+  .party-quote strong {
+    font-size: 18px;
+  }
+
+  .party-quote small {
+    font-size: 13px;
+  }
+
+  .party-meta .rank-row {
+    grid-column: 1;
+  }
+
   .party-stats {
     grid-column: 1 / -1;
     grid-row: 2;
-    grid-template-columns: minmax(0, 1fr) auto;
-    column-gap: 10px;
+    grid-template-columns: 1fr;
+    row-gap: 8px;
     padding-top: 8px;
     border-top: 3px dashed #cfc6b0;
   }
@@ -2566,8 +2629,13 @@ button {
 
   .party-pnl {
     min-width: 0;
-    justify-items: end;
-    text-align: right;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 6px 10px;
+    text-align: left;
   }
 
   .party-slot.editing {
@@ -2619,31 +2687,30 @@ button {
 
   .field.battling {
     height: auto;
-    min-height: 260px;
-    overflow: visible;
+    min-height: 0;
+    overflow: hidden;
+    padding: 10px 8px 12px;
   }
 
   .wild-box {
-    min-width: 0;
-    width: min(100%, 100%);
+    width: min(240px, 100%);
     max-width: 100%;
-    box-shadow: 4px 4px 0 #0f380f;
-    padding: 8px 10px 10px;
-    overflow: visible;
+    box-shadow: 3px 3px 0 #0f380f;
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .wild-sprite {
+    min-height: 76px;
   }
 
   .wild-name {
-    font-size: 10px;
-    word-break: break-all;
+    font-size: 16px;
   }
 
   .wild-quote {
     flex-wrap: wrap;
-    font-size: 15px;
-  }
-
-  .wild-box .rank-row {
-    margin-top: 6px;
+    font-size: 18px;
   }
 
   .msg-box {
@@ -2700,7 +2767,7 @@ button {
   }
 
   .field.battling {
-    min-height: 240px;
+    min-height: 0;
   }
 
   .dex-row {
@@ -2733,7 +2800,7 @@ button {
   }
 
   .field.battling {
-    min-height: 220px;
+    min-height: 0;
     height: auto;
   }
 

@@ -399,30 +399,34 @@ export function Grassland() {
         {(phase === 'battle' || phase === 'ball' || phase === 'result') && wild ? (
           <div className="battle">
             <div className={`wild-box ${phase === 'ball' ? 'in-ball' : ''} ${result === 'ok' ? 'caught-box' : ''}`}>
-              {phase === 'ball' ? (
-                <div className={`pokeball shake-${shakes}`}>
-                  <i className="cap" />
-                  <i className="btn" />
+              <div className="wild-sprite">
+                {phase === 'ball' ? (
+                  <div className={`pokeball shake-${shakes}`}>
+                    <i className="cap" />
+                    <i className="btn" />
+                  </div>
+                ) : (
+                  <PixelSprite stock={wild} size="lg" bounce={result !== 'ok'} />
+                )}
+              </div>
+              <div className="wild-info">
+                <p className="wild-name">
+                  {wild.name}
+                  <small>{wild.code}</small>
+                </p>
+                <p className={`wild-quote ${wildQuote?.live ? (wildPct >= 0 ? 'up' : 'down') : ''}`}>
+                  {wildQuote?.live ? formatPrice(wildQuote.price) : '——.—'}
+                  <small>
+                    {wildQuote?.live
+                      ? `${wildPct >= 0 ? '▲' : '▼'}${wildPct.toFixed(2)}%`
+                      : '接入中'}
+                  </small>
+                </p>
+                <div className="type-row compact">
+                  {wild.types.map((t) => (
+                    <TypeBadge key={t} type={t} />
+                  ))}
                 </div>
-              ) : (
-                <PixelSprite stock={wild} size="lg" bounce={result !== 'ok'} />
-              )}
-              <p className="wild-name">
-                {wild.name}
-                <small>{wild.code}</small>
-              </p>
-              <p className={`wild-quote ${wildQuote?.live ? (wildPct >= 0 ? 'up' : 'down') : ''}`}>
-                {wildQuote?.live ? formatPrice(wildQuote.price) : '——.—'}
-                <small>
-                  {wildQuote?.live
-                    ? `${wildPct >= 0 ? '▲' : '▼'}${wildPct.toFixed(2)}%`
-                    : '接入中'}
-                </small>
-              </p>
-              <div className="type-row compact">
-                {wild.types.map((t) => (
-                  <TypeBadge key={t} type={t} />
-                ))}
               </div>
               <div className="rank-row">
                 <div className="hp-bar mini">
