@@ -40,6 +40,41 @@ function defaultSave(): SaveData {
   }
 }
 
+function missingSprite(id: string): StockSprite {
+  return {
+    id,
+    no: 0,
+    code: '------',
+    name: '?????',
+    market: 'CN',
+    types: ['conglomerate'],
+    rarity: 'common',
+    shape: 'orb',
+    category: '未知',
+    heightLabel: '—',
+    weightLabel: '—',
+    dexText: '这只精灵的图鉴页找不到了。',
+    habitat: '—',
+    ability: '—',
+    abilityDesc: '—',
+    baseStats: { hp: 50, atk: 50, def: 50, spa: 50, spd: 50, spe: 50 },
+    basePrice: 10,
+    wildness: 20,
+  }
+}
+
+function sanitizeOwned(save: SaveData): SaveData {
+  const owned = new Set(Array.isArray(save.captured) ? save.captured : [])
+  const rawHoldings = save.holdings && typeof save.holdings === 'object' ? save.holdings : {}
+  const holdings = Object.fromEntries(Object.entries(rawHoldings).filter(([id]) => owned.has(id)))
+  const squads = (Array.isArray(save.squads) ? save.squads : []).map((squad) => ({
+    ...squad,
+    members: (squad.members ?? []).filter((id) => owned.has(id)),
+  }))
+  const active = squads.find((s) => s.id === save.activeSquadId) ?? squads[0]
+  return { ...save, captured: [...owned], holdings, squads, party: active?.members ?? [] }
+}
+
 function loadSave(): SaveData {
   try {
     const raw = localStorage.getItem(SAVE_KEY)
@@ -51,7 +86,7 @@ function loadSave(): SaveData {
       ...stock,
       types: stock.types.map(migrateSector) as StockSprite['types'],
     }))
-    return migrateSquads(parsed, stored)
+    return sanitizeOwned(migrateSquads(parsed, stored))
   } catch {
     return defaultSave()
   }
@@ -208,11 +243,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }
       },
       play,
-      getSprite: (id) => {
-        const stock = catalog.find((s) => s.id === id)
-        if (!stock) throw new Error(`未知精灵: ${id}`)
-        return stock
-      },
+      getSprite: (id) => catalog.find((s) => s.id === id) ?? missingSprite(id),
       registerStock: (stock, quote) => {
         setQuotes((prev) => ({ ...prev, [stock.id]: quote }))
         if (STOCK_MAP[stock.id]) return
@@ -261,21 +292,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
         return { ok: true, toParty: before.length < 6 && !before.includes(id), rate }
       },
       release: (id) => {
-        setSave((prev) => {
-          const holdings = { ...prev.holdings }
-          delete holdings[id]
-          const squads = prev.squads.map((s) => ({
-            ...s,
-            members: s.members.filter((x) => x !== id),
-          }))
-          return {
+        setSave((prev) =>
+          sanitizeOwned({
             ...prev,
             captured: prev.captured.filter((x) => x !== id),
-            squads,
-            party: (squads.find((s) => s.id === prev.activeSquadId) ?? squads[0]).members,
-            holdings,
-          }
-        })
+          }),
+        )
       },
       setHolding: (id, holding) => {
         setSave((prev) => {

@@ -59,6 +59,14 @@ function parseTrends(json: { data?: { trends?: string[] } }) {
     .filter((bar) => bar.time && bar.close > 0)
 }
 
+export async function fetchBars(symbol: string, period: ChartPeriod = 'day', days?: number) {
+  const extra = days ? `&lmt=${days}` : ''
+  const url = `/radar/bars?symbol=${encodeURIComponent(symbol)}&period=${period}${extra}`
+  const res = await fetch(url, { headers: { Accept: 'application/json' } })
+  if (!res.ok) throw new Error('K线中断')
+  return parseTencent(await res.json(), period)
+}
+
 export async function fetchChart(stock: Pick<StockSprite, 'id' | 'code' | 'market'>, period: ChartPeriod) {
   if (period === 'minute') {
     const url = `/radar/trends?secid=${encodeURIComponent(quoteIdOf(stock))}&ndays=1&iscr=0&fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58`
@@ -66,8 +74,5 @@ export async function fetchChart(stock: Pick<StockSprite, 'id' | 'code' | 'marke
     if (!res.ok) throw new Error('分时中断')
     return parseTrends(await res.json())
   }
-  const url = `/radar/bars?symbol=${encodeURIComponent(klineSymbolOf(stock))}&period=${period}`
-  const res = await fetch(url, { headers: { Accept: 'application/json' } })
-  if (!res.ok) throw new Error('K线中断')
-  return parseTencent(await res.json(), period)
+  return fetchBars(klineSymbolOf(stock), period)
 }

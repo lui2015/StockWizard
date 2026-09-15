@@ -6,7 +6,28 @@ export interface MarketHit {
   market: 'CN' | 'HK'
   board: string
   quoteId: string
+  price?: number
+  pct?: number
 }
+
+export type RadarMarket = 'all' | 'CN' | 'HK' | 'SH' | 'SZ' | 'CYB' | 'KCB'
+
+export const RADAR_BOARDS = [
+  { id: 'all', label: '全部', fs: '' },
+  { id: 'ai', label: '人工智能', fs: 'b:BK0800' },
+  { id: 'robot', label: '人形机器人', fs: 'b:BK1184' },
+  { id: 'compute', label: '算力', fs: 'b:BK1134' },
+  { id: 'chip', label: '国产芯片', fs: 'b:BK0891' },
+  { id: 'nev', label: '新能源车', fs: 'b:BK0900' },
+  { id: 'solar', label: '光伏', fs: 'b:BK0588' },
+  { id: 'battery', label: '锂电池', fs: 'b:BK0574' },
+  { id: 'huawei', label: '华为概念', fs: 'b:BK0854' },
+  { id: 'lowalt', label: '低空经济', fs: 'b:BK1166' },
+  { id: 'drug', label: '创新药', fs: 'b:BK1106' },
+  { id: 'drive', label: '智能驾驶', fs: 'b:BK0802' },
+] as const
+
+export type RadarBoard = (typeof RADAR_BOARDS)[number]['id']
 
 interface EmSuggest {
   Code?: string
@@ -56,6 +77,137 @@ export async function searchStocks(keyword: string): Promise<MarketHit[]> {
     })
   }
   return hits
+}
+
+const MARKET_FS: Record<RadarMarket, string> = {
+  all: 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23,m:128+t:3,m:128+t:4,m:128+t:1,m:128+t:2',
+  CN: 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23',
+  HK: 'm:128+t:3,m:128+t:4,m:128+t:1,m:128+t:2',
+  SH: 'm:1+t:2,m:1+t:23',
+  SZ: 'm:0+t:6,m:0+t:80',
+  CYB: 'm:0+t:80',
+  KCB: 'm:1+t:23',
+}
+
+const SECTOR_FS: Record<string, string> = {
+  finance: 'b:BK0475,b:BK0473,b:BK0474',
+  consumer: 'b:BK0438,b:BK0482',
+  healthcare: 'b:BK0465',
+  energy: 'b:BK0464,b:BK0437,b:BK0428',
+  property: 'b:BK0451',
+  industrials: 'b:BK1205,b:BK0481,b:BK1204',
+  tech: 'b:BK0448,b:BK0447',
+  internet: 'b:BK0486,b:BK0447',
+  cyclical: 'b:BK0478,b:BK0479',
+}
+
+function boardOf(mkt: string): { market: 'CN' | 'HK'; board: string } {
+  if (mkt === '116' || mkt === '128') return { market: 'HK', board: '港股' }
+  if (mkt === '90') return { market: 'CN', board: '京A' }
+  if (mkt === '1') return { market: 'CN', board: '沪A' }
+  return { market: 'CN', board: '深A' }
+}
+
+function skipScreen(name: string, code: string) {
+  if (SKIP_NAME.test(name) || /ST|退|B股|Ｂ/.test(name)) return true
+  if (/^(200|900)/.test(code)) return true
+  return false
+}
+
+function hitFromClist(row: Record<string, unknown>): MarketHit | null {
+  const code = String(row.f12 ?? '')
+  const mkt = String(row.f13 ?? '')
+  const name = String(row.f14 ?? '')
+  if (!code || !mkt || !name || skipScreen(name, code)) return null
+  const { market, board } = boardOf(mkt)
+  const quoteId = `${mkt}.${code}`
+  const price = num(row.f2)
+  const pct = ratio(row.f3)
+  return {
+    id: `em-${quoteId}`,
+    code,
+    name,
+    pinyin: '',
+    market,
+    board,
+    quoteId,
+    price: price > 0 ? price : undefined,
+    pct,
+  }
+}
+
+export function radarKind(hit: MarketHit): Exclude<RadarMarket, 'all' | 'CN'> {
+  if (hit.market === 'HK' || hit.board === '港股') return 'HK'
+  const code = hit.code.replace(/\D/g, '')
+  if (code.startsWith('688')) return 'KCB'
+  if (code.startsWith('300') || code.startsWith('301')) return 'CYB'
+  if (code.startsWith('6') || hit.board === '沪A') return 'SH'
+  return 'SZ'
+}
+
+export function matchMarket(hit: MarketHit, market: RadarMarket) {
+  if (market === 'all') return true
+  if (market === 'CN') return hit.market === 'CN'
+  if (market === 'HK') return hit.market === 'HK'
+  const kind = radarKind(hit)
+  if (market === 'SH') return kind === 'SH' || kind === 'KCB'
+  if (market === 'SZ') return kind === 'SZ' || kind === 'CYB'
+  return kind === market
+}
+
+function matchKeyword(hit: MarketHit, keyword: string) {
+  const q = keyword.trim().toLowerCase()
+  if (!q) return true
+  return (
+    hit.name.toLowerCase().includes(q) ||
+    hit.code.toLowerCase().includes(q) ||
+    hit.pinyin.toLowerCase().includes(q)
+  )
+}
+
+async function fetchClist(fs: string, limit: number): Promise<MarketHit[]> {
+  const params = new URLSearchParams({
+    pn: '1',
+    pz: String(limit),
+    po: '1',
+    np: '1',
+    fltt: '2',
+    invt: '2',
+    fid: 'f3',
+    fs,
+    fields: 'f12,f13,f14,f2,f3',
+  })
+  const res = await fetch(`/radar/clist?${params}`, { headers: { Accept: 'application/json' } })
+  if (!res.ok) throw new Error('雷达信号中断')
+  const json = (await res.json()) as {
+    data?: { diff?: Record<string, Record<string, unknown>> | Array<Record<string, unknown>> }
+  }
+  const raw = json.data?.diff
+  const rows = Array.isArray(raw) ? raw : raw ? Object.values(raw) : []
+  const seen = new Set<string>()
+  const hits: MarketHit[] = []
+  for (const row of rows) {
+    const hit = hitFromClist(row)
+    if (!hit || seen.has(hit.quoteId)) continue
+    seen.add(hit.quoteId)
+    hits.push(hit)
+  }
+  return hits
+}
+
+export async function screenStocks(opts: {
+  market: RadarMarket
+  sector: string
+  board: RadarBoard
+  keyword?: string
+}): Promise<MarketHit[]> {
+  const boardFs = RADAR_BOARDS.find((item) => item.id === opts.board)?.fs
+  const useSector = !boardFs && opts.sector !== 'all' && opts.market !== 'HK' && SECTOR_FS[opts.sector]
+  const fs = boardFs || (useSector ? SECTOR_FS[opts.sector] : MARKET_FS[opts.market])
+  const hits = await fetchClist(fs, opts.keyword ? 100 : 40)
+  return hits
+    .filter((hit) => matchMarket(hit, opts.market) && matchKeyword(hit, opts.keyword ?? ''))
+    .slice(0, 30)
 }
 
 export interface LiveQuote {
@@ -238,6 +390,66 @@ export async function fetchLiveQuote(quoteId: string): Promise<LiveQuote | null>
     series,
     ...fund,
   }
+}
+
+export type TapeGroup = 'CN' | 'HK' | 'US'
+
+export interface TapeIndex {
+  id: string
+  group: TapeGroup
+  name: string
+  price: number
+  pct: number
+  change: number
+}
+
+const TAPE_LIST: { id: string; group: TapeGroup; name: string; bar: string }[] = [
+  { id: '1.000001', group: 'CN', name: '上证指数', bar: 'sh000001' },
+  { id: '0.399001', group: 'CN', name: '深证成指', bar: 'sz399001' },
+  { id: '1.000300', group: 'CN', name: '沪深300', bar: 'sh000300' },
+  { id: '0.399006', group: 'CN', name: '创业板指', bar: 'sz399006' },
+  { id: '1.000688', group: 'CN', name: '科创50', bar: 'sh000688' },
+  { id: '1.000016', group: 'CN', name: '上证50', bar: 'sh000016' },
+  { id: '100.HSI', group: 'HK', name: '恒生指数', bar: 'hkHSI' },
+  { id: '100.HSCEI', group: 'HK', name: '恒生国企', bar: 'hkHSCEI' },
+  { id: '124.HSTECH', group: 'HK', name: '恒生科技', bar: 'hkHSTECH' },
+  { id: '100.DJIA', group: 'US', name: '道琼斯', bar: 'usDJI' },
+  { id: '100.NDX', group: 'US', name: '纳斯达克', bar: 'usIXIC' },
+  { id: '100.SPX', group: 'US', name: '标普500', bar: 'usINX' },
+]
+
+export const TAPE_BARS = Object.fromEntries(TAPE_LIST.map((item) => [item.id, item.bar]))
+
+export async function fetchMarketTape(): Promise<TapeIndex[]> {
+  const url = `/radar/ulist?fltt=2&invt=2&fields=f12,f13,f14,f2,f3,f4,f18&secids=${encodeURIComponent(
+    TAPE_LIST.map((item) => item.id).join(','),
+  )}`
+  const res = await fetch(url, { headers: { Accept: 'application/json' } })
+  if (!res.ok) throw new Error('大盘信号中断')
+  const json = (await res.json()) as {
+    data?: { diff?: Record<string, Record<string, unknown>> | Array<Record<string, unknown>> }
+  }
+  const raw = json.data?.diff
+  const rows = Array.isArray(raw) ? raw : raw ? Object.values(raw) : []
+  const byId = new Map<string, Record<string, unknown>>()
+  for (const row of rows) {
+    const id = `${row.f13}.${row.f12}`
+    byId.set(id, row)
+    byId.set(String(row.f12 ?? ''), row)
+  }
+  return TAPE_LIST.map((item) => {
+    const row = byId.get(item.id) ?? byId.get(item.id.split('.')[1] ?? '')
+    const price = num(row?.f2)
+    const pct = ratio(row?.f3)
+    const change = ratio(row?.f4)
+    const prev = num(row?.f18)
+    return {
+      ...item,
+      price,
+      pct: pct ?? (prev > 0 && price > 0 ? ((price - prev) / prev) * 100 : 0),
+      change: change ?? (price && prev ? price - prev : 0),
+    }
+  }).filter((item) => item.price > 0)
 }
 
 export async function fetchBatchQuotes(quoteIds: string[]): Promise<Record<string, LiveQuote>> {

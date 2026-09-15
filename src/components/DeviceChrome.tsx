@@ -33,7 +33,7 @@ export function DeviceChrome({ children }: { children: ReactNode }) {
                 className={
                   screen.name === item.id ||
                   (item.id === 'dex' && screen.name === 'detail') ||
-                  (item.id === 'menu' && screen.name === 'settings')
+                  (item.id === 'menu' && (screen.name === 'settings' || screen.name === 'reports' || screen.name === 'report'))
                     ? 'on'
                     : ''
                 }

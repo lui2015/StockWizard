@@ -63,8 +63,7 @@ export function pricePercentile(price: number, history: number[]) {
   const pts = history.filter((n) => n > 0 && Number.isFinite(n))
   if (!pts.length || !(price > 0)) return null
   const below = pts.filter((n) => n < price).length
-  const equal = pts.filter((n) => n === price).length
-  return ((below + equal * 0.5) / pts.length) * 100
+  return (below / pts.length) * 100
 }
 
 export function percentileNote(name: string, pct: number | null, sample: number) {

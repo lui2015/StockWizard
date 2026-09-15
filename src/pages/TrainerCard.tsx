@@ -18,20 +18,19 @@ export function TrainerCard() {
     }
   }
 
-  const holdIds = Object.keys(save.holdings)
+  const holdIds = save.captured.filter((id) => save.holdings[id])
   const book = bookOf(holdIds, save.holdings, quotes, priceOf)
   const squadBooks = save.squads.map((squad) => ({
     squad,
-    book: bookOf(squad.members, save.holdings, quotes, priceOf),
+    book: bookOf(
+      squad.members.filter((id) => save.captured.includes(id)),
+      save.holdings,
+      quotes,
+      priceOf,
+    ),
   }))
 
-  const watched = useMemo(() => {
-    const ids = new Set<string>([...save.captured, ...save.party, ...Object.keys(save.holdings)])
-    for (const squad of save.squads) {
-      for (const id of squad.members) ids.add(id)
-    }
-    return [...ids]
-  }, [save.captured, save.party, save.squads, save.holdings])
+  const watched = useMemo(() => [...new Set(save.captured)], [save.captured])
 
   const movers = watched
     .map((id) => {

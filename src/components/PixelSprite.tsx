@@ -15,9 +15,9 @@ export function PixelSprite({
   silhouette?: boolean
   bounce?: boolean
 }) {
-  const grid = SHAPES[stock.shape]
-  const palette = SECTOR_META[stock.types[0]].colors
-  const second = stock.types[1] ? SECTOR_META[stock.types[1]].colors : palette
+  const grid = SHAPES[stock.shape] ?? SHAPES.orb
+  const palette = (SECTOR_META[stock.types?.[0]] ?? SECTOR_META.conglomerate).colors
+  const second = stock.types[1] && SECTOR_META[stock.types[1]] ? SECTOR_META[stock.types[1]].colors : palette
   const px = SIZE[size]
   const w = Math.max(...grid.map((r) => r.length))
   const h = grid.length + (stock.id === 'aapl' || stock.id === 'moutai' ? 3 : 0)

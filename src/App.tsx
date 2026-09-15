@@ -1,4 +1,5 @@
 import { DeviceChrome } from './components/DeviceChrome'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { useGame } from './store/gameStore'
 import { DexDetail } from './pages/DexDetail'
 import { Grassland } from './pages/Grassland'
@@ -7,10 +8,12 @@ import { Party } from './pages/Party'
 import { Pokedex } from './pages/Pokedex'
 import { Settings } from './pages/Settings'
 import { TitleScreen } from './pages/TitleScreen'
+import { Reports } from './pages/Reports'
+import { ReportView } from './pages/ReportView'
 import { TrainerCard } from './pages/TrainerCard'
 
 export function App() {
-  const { screen } = useGame()
+  const { screen, setScreen } = useGame()
 
   let view = null
   switch (screen.name) {
@@ -35,10 +38,20 @@ export function App() {
     case 'trainer':
       view = <TrainerCard />
       break
+    case 'reports':
+      view = <Reports />
+      break
+    case 'report':
+      view = <ReportView id={screen.id} />
+      break
     case 'settings':
       view = <Settings />
       break
   }
 
-  return <DeviceChrome>{view}</DeviceChrome>
+  return (
+    <DeviceChrome>
+      <ErrorBoundary onReset={() => setScreen({ name: 'menu' })}>{view}</ErrorBoundary>
+    </DeviceChrome>
+  )
 }

@@ -2,12 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchLiveQuote, type MarketHit } from '../api/eastmoney'
 import { STOCKS } from '../data/stocks'
 import { CatchFanfare } from '../components/CatchFanfare'
+import { MarketTape } from '../components/MarketTape'
 import { PixelSprite } from '../components/PixelSprite'
 import { StockRadar } from '../components/StockRadar'
 import { TypeBadge } from '../components/TypeBadge'
 import { useGame } from '../store/gameStore'
 import { observeNotes } from '../utils/observe'
 import { quoteIdOf } from '../utils/quoteId'
+import { fetchChart } from '../api/chart'
+import { changePct, formatPrice, pricePercentile } from '../utils/quotes'
 import { catchRate } from '../utils/stats'
 import { sfx } from '../utils/sound'
 import { quoteFromLive, spriteFromHit } from '../utils/wildStock'
@@ -64,6 +67,7 @@ export function Grassland() {
   const [shakes, setShakes] = useState(0)
   const [result, setResult] = useState('')
   const [radar, setRadar] = useState(false)
+  const [tape, setTape] = useState(false)
   const [look, setLook] = useState(0)
   const lookRef = useRef(0)
   const catchNoteRef = useRef('')
@@ -71,9 +75,29 @@ export function Grassland() {
   const hotRef = useRef<number | null>(null)
   const phaseRef = useRef(phase)
   const [msg, setMsg] = useState('草丛会自己晃。点中晃着的那丛，或按拨草，才可能跳出精灵。')
+  const [dayCloses, setDayCloses] = useState<number[]>([])
 
   phaseRef.current = phase
   hotRef.current = hot
+
+  useEffect(() => {
+    if (!wild) {
+      setDayCloses([])
+      return
+    }
+    let alive = true
+    void fetchChart(wild, 'day')
+      .then((bars) => {
+        if (!alive) return
+        setDayCloses(bars.map((bar) => bar.close).filter((n) => n > 0))
+      })
+      .catch(() => {
+        if (alive) setDayCloses([])
+      })
+    return () => {
+      alive = false
+    }
+  }, [wild?.id])
 
   const pool = useMemo(() => {
     const unseen = catalog.filter((s) => !save.captured.includes(s.id))
@@ -278,11 +302,24 @@ export function Grassland() {
         quotes[wild.id],
       )
     : 0
+  const wildQuote = wild
+    ? (quotes[wild.id] ?? { price: wild.basePrice, open: wild.basePrice, series: [wild.basePrice] })
+    : null
+  const wildPct = wildQuote ? changePct(wildQuote) : 0
+  const wildRank = wildQuote ? pricePercentile(wildQuote.price, dayCloses) : null
 
   if (radar) {
     return (
       <div className="panel grass-panel">
         <StockRadar onClose={() => setRadar(false)} onPick={pickFromRadar} />
+      </div>
+    )
+  }
+
+  if (tape) {
+    return (
+      <div className="panel grass-panel">
+        <MarketTape onClose={() => setTape(false)} />
       </div>
     )
   }
@@ -297,13 +334,12 @@ export function Grassland() {
         <div className="head-ops">
           <button
             className="tiny"
-            data-open-radar
             onClick={() => {
               play(sfx.blip)
-              setRadar(true)
+              setTape(true)
             }}
           >
-            搜索
+            大盘行情
           </button>
           <button className="tiny" onClick={() => setScreen({ name: 'menu' })}>
             返回
@@ -371,10 +407,27 @@ export function Grassland() {
                 {wild.name}
                 <small>{wild.code}</small>
               </p>
+              <p className={`wild-quote ${wildQuote?.live ? (wildPct >= 0 ? 'up' : 'down') : ''}`}>
+                {wildQuote?.live ? formatPrice(wildQuote.price) : '——.—'}
+                <small>
+                  {wildQuote?.live
+                    ? `${wildPct >= 0 ? '▲' : '▼'}${wildPct.toFixed(2)}%`
+                    : '接入中'}
+                </small>
+              </p>
               <div className="type-row compact">
                 {wild.types.map((t) => (
                   <TypeBadge key={t} type={t} />
                 ))}
+              </div>
+              <div className="rank-row">
+                <div className="hp-bar mini">
+                  <i
+                    style={{ width: `${wildRank ?? 0}%` }}
+                    className={wildRank == null ? '' : wildRank >= 70 ? 'ok' : wildRank <= 30 ? 'low' : 'mid'}
+                  />
+                </div>
+                <small>{wildRank == null ? '分位 —' : `${Math.round(wildRank)}%`}</small>
               </div>
             </div>
           </div>

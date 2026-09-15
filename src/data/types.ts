@@ -22,6 +22,8 @@ export type Screen =
   | { name: 'grass' }
   | { name: 'party' }
   | { name: 'trainer' }
+  | { name: 'reports' }
+  | { name: 'report'; id: string }
   | { name: 'settings' }
 
 export interface StockSprite {
