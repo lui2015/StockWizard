@@ -11,12 +11,18 @@ const ROUTES = {
     'https://push2.eastmoney.com/api/qt/stock/get',
   ],
   '/radar/kline': [
-    'https://push2.eastmoney.com/api/qt/stock/kline/get',
     'https://push2delay.eastmoney.com/api/qt/stock/kline/get',
+    'https://push2.eastmoney.com/api/qt/stock/kline/get',
     'https://push2his.eastmoney.com/api/qt/stock/kline/get',
   ],
-  '/radar/trends': ['https://push2.eastmoney.com/api/qt/stock/trends2/get'],
-  '/radar/ulist': ['https://push2.eastmoney.com/api/qt/ulist.np/get'],
+  '/radar/trends': [
+    'https://push2delay.eastmoney.com/api/qt/stock/trends2/get',
+    'https://push2.eastmoney.com/api/qt/stock/trends2/get',
+  ],
+  '/radar/ulist': [
+    'https://push2delay.eastmoney.com/api/qt/ulist.np/get',
+    'https://push2.eastmoney.com/api/qt/ulist.np/get',
+  ],
   '/radar/clist': [
     'https://push2delay.eastmoney.com/api/qt/clist/get',
     'https://push2.eastmoney.com/api/qt/clist/get',
@@ -37,7 +43,10 @@ async function fetchUpstream(targets, query) {
   let lastError
   for (const target of targets) {
     try {
-      const upstream = await fetch(`${target}${query}`, { headers: UPSTREAM_HEADERS })
+      const upstream = await fetch(`${target}${query}`, {
+        headers: UPSTREAM_HEADERS,
+        signal: AbortSignal.timeout(8000),
+      })
       if (upstream.ok) return upstream
       lastError = new Error(`${target} ${upstream.status}`)
     } catch (error) {
@@ -65,7 +74,10 @@ export function createRadarMiddleware() {
       try {
         const upstream = await fetch(
           `${host}?param=${encodeURIComponent(`${symbol},${period},,,${lmt},qfq`)}`,
-          { headers: { ...UPSTREAM_HEADERS, Referer: 'https://gu.qq.com/' } },
+          {
+            headers: { ...UPSTREAM_HEADERS, Referer: 'https://gu.qq.com/' },
+            signal: AbortSignal.timeout(8000),
+          },
         )
         const body = await upstream.text()
         res.statusCode = upstream.status
