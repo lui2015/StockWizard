@@ -347,7 +347,11 @@ export function Grassland() {
         </div>
       </header>
 
-      <div className={`field hunt ${phase === 'flash' ? 'flash' : ''} ${phase === 'caught' ? 'caught' : ''}`}>
+      <div
+        className={`field hunt ${phase === 'flash' ? 'flash' : ''} ${phase === 'caught' ? 'caught' : ''} ${
+          phase === 'battle' || phase === 'ball' || phase === 'result' ? 'battling' : ''
+        }`}
+      >
         <span className="cloud puff c1"><i /><i /><i /></span>
         <span className="cloud puff c2"><i /><i /><i /></span>
         <span className="cloud puff c3"><i /><i /></span>

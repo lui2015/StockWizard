@@ -4,7 +4,15 @@ import { TypeBadge } from '../components/TypeBadge'
 import { useGame } from '../store/gameStore'
 import { fetchChart } from '../api/chart'
 import { formatSigned, positionOf } from '../utils/holding'
-import { changeAmt, changePct, formatPrice, pricePercentile } from '../utils/quotes'
+import {
+  changeAmt,
+  changePct,
+  formatPercent,
+  formatPrice,
+  formatRatio,
+  medianPrice,
+  pricePercentile,
+} from '../utils/quotes'
 import { MAX_SQUADS } from '../utils/squads'
 import { levelOf } from '../utils/stats'
 import { sfx } from '../utils/sound'
@@ -54,7 +62,7 @@ export function Party() {
     void Promise.all(
       party.map(async (id) => {
         try {
-          const bars = await fetchChart(getSprite(id), 'day')
+          const bars = await fetchChart(getSprite(id), 'day', 1250)
           return [id, bars.map((bar) => bar.close).filter((n) => n > 0)] as const
         } catch {
           return [id, []] as const
@@ -195,7 +203,9 @@ export function Party() {
           const pct = changePct(quote)
           const amt = changeAmt(quote)
           const pos = positionOf(save.holdings[id], quote)
-          const rank = pricePercentile(quote.price, dayCloses[id] ?? [])
+          const closes = dayCloses[id] ?? []
+          const rank = pricePercentile(quote.price, closes.slice(-500))
+          const mid5y = medianPrice(closes)
           return (
             <li key={id} className={`party-slot ${editing ? 'editing' : ''}`}>
               <button
@@ -207,13 +217,27 @@ export function Party() {
               >
                 <PixelSprite stock={stock} size="md" />
                 <div className="party-meta">
-                  <b>
-                    {stock.name} <small>Lv.{levelOf(stock, quote)}</small>
-                  </b>
-                  <div className="type-row compact">
-                    {stock.types.map((t) => (
-                      <TypeBadge key={t} type={t} />
-                    ))}
+                  <div className="party-id">
+                    <b>
+                      <span className="party-name">{stock.name}</span>
+                      <small>Lv.{levelOf(stock, quote)}</small>
+                    </b>
+                    <div className="type-row compact">
+                      {stock.types.map((t) => (
+                        <TypeBadge key={t} type={t} />
+                      ))}
+                    </div>
+                  </div>
+                  <div className={`party-quote ${pct >= 0 ? 'up' : 'down'}`}>
+                    <strong>{quote.live ? formatPrice(quote.price) : '——.—'}</strong>
+                    <small>
+                      {pct >= 0 ? '▲' : '▼'}
+                      {pct.toFixed(2)}%
+                    </small>
+                    <small>
+                      {amt >= 0 ? '+' : ''}
+                      {formatPrice(amt)}
+                    </small>
                   </div>
                   <div className="rank-row">
                     <div className="hp-bar mini">
@@ -225,27 +249,36 @@ export function Party() {
                     <small>{rank == null ? '分位 —' : `${Math.round(rank)}%`}</small>
                   </div>
                 </div>
-                <div className={`party-pnl ${pos ? (pos.pnl >= 0 ? 'up' : 'down') : 'mute'}`}>
-                  <small>持仓盈亏</small>
-                  {pos ? (
-                    <>
-                      <strong>{formatSigned(pos.pnl)}</strong>
-                      <small>{formatSigned(pos.pct)}%</small>
-                    </>
-                  ) : (
-                    <small>未建仓</small>
-                  )}
-                </div>
-                <div className={`party-quote ${pct >= 0 ? 'up' : 'down'}`}>
-                  <strong>{quote.live ? formatPrice(quote.price) : '——.—'}</strong>
-                  <small>
-                    {pct >= 0 ? '▲' : '▼'}
-                    {pct.toFixed(2)}%
-                  </small>
-                  <small>
-                    {amt >= 0 ? '+' : ''}
-                    {formatPrice(amt)}
-                  </small>
+                <div className="party-stats">
+                  <div className="party-fund">
+                    <span>
+                      <small>市盈率</small>
+                      <b>{formatRatio(quote.peTtm ?? quote.pe)}</b>
+                    </span>
+                    <span>
+                      <small>市净率</small>
+                      <b>{formatRatio(quote.pb)}</b>
+                    </span>
+                    <span>
+                      <small>股息率</small>
+                      <b>{formatPercent(quote.dividendYield)}</b>
+                    </span>
+                    <span>
+                      <small>五年中位</small>
+                      <b>{mid5y == null ? '—' : formatPrice(mid5y)}</b>
+                    </span>
+                  </div>
+                  <div className={`party-pnl ${pos ? (pos.pnl >= 0 ? 'up' : 'down') : 'mute'}`}>
+                    <small>持仓盈亏</small>
+                    {pos ? (
+                      <>
+                        <strong>{formatSigned(pos.pnl)}</strong>
+                        <small>{formatSigned(pos.pct)}%</small>
+                      </>
+                    ) : (
+                      <small>未建仓</small>
+                    )}
+                  </div>
                 </div>
               </button>
               {editing ? (

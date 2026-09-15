@@ -284,7 +284,7 @@ function pickFund(row: Record<string, unknown>): Partial<LiveQuote> {
     roe: ratio(row.f173) || undefined,
     netMargin: ratio(row.f187) || undefined,
     grossMargin: ratio(row.f186) || undefined,
-    dividendYield: ratio(row.f197) || undefined,
+    dividendYield: ratio(row.f197) || ratio(row.f133) || ratio(row.f188) || undefined,
   }
 }
 
@@ -457,7 +457,7 @@ export async function fetchMarketTape(): Promise<TapeIndex[]> {
 export async function fetchBatchQuotes(quoteIds: string[]): Promise<Record<string, LiveQuote>> {
   const ids = quoteIds.filter(Boolean)
   if (!ids.length) return {}
-  const url = api(`/radar/ulist?fltt=2&invt=2&fields=f12,f13,f14,f2,f3,f5,f6,f7,f8,f9,f10,f15,f16,f17,f18,f20,f21,f23&secids=${encodeURIComponent(ids.join(','))}`)
+  const url = api(`/radar/ulist?fltt=2&invt=2&fields=f12,f13,f14,f2,f3,f5,f6,f7,f8,f9,f10,f15,f16,f17,f18,f20,f21,f23,f133,f164,f188,f197&secids=${encodeURIComponent(ids.join(','))}`)
   const res = await fetch(url, { headers: { Accept: 'application/json' } })
   if (!res.ok) return {}
   const json = (await res.json()) as {

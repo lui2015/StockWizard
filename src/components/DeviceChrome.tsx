@@ -17,6 +17,8 @@ export function DeviceChrome({ children }: { children: ReactNode }) {
   return (
     <div className="device-wrap">
       <div className="device">
+        <i className="screw tl" aria-hidden />
+        <i className="screw tr" aria-hidden />
         <header className="device-top">
           <span className="led" />
           <span className="brand">STOCK WIZARD</span>
@@ -24,6 +26,14 @@ export function DeviceChrome({ children }: { children: ReactNode }) {
         </header>
         <div className={`screen ${screen.name === 'title' ? 'screen-title' : ''}`}>
           {children}
+        </div>
+        <div className="device-speaker" aria-hidden>
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
         </div>
         {!hideNav ? (
           <nav className="device-nav">
@@ -47,6 +57,8 @@ export function DeviceChrome({ children }: { children: ReactNode }) {
             ))}
           </nav>
         ) : null}
+        <i className="screw bl" aria-hidden />
+        <i className="screw br" aria-hidden />
       </div>
     </div>
   )

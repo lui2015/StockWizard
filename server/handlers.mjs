@@ -58,7 +58,7 @@ export function createRadarMiddleware() {
       const period = query.get('period') ?? 'day'
       const asked = Number(query.get('lmt'))
       const fallback = period === 'day' ? 100 : period === 'week' ? 72 : 48
-      const lmt = Number.isFinite(asked) ? Math.min(800, Math.max(20, Math.round(asked))) : fallback
+      const lmt = Number.isFinite(asked) ? Math.min(1300, Math.max(20, Math.round(asked))) : fallback
       const host = symbol.startsWith('us')
         ? 'https://web.ifzq.gtimg.cn/appstock/app/usfqkline/get'
         : 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get'

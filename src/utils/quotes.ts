@@ -59,6 +59,13 @@ export function formatPercent(n?: number, digits = 2) {
   return `${n.toFixed(digits)}%`
 }
 
+export function medianPrice(history: number[]) {
+  const pts = history.filter((n) => n > 0 && Number.isFinite(n)).sort((a, b) => a - b)
+  if (!pts.length) return undefined
+  const mid = Math.floor(pts.length / 2)
+  return pts.length % 2 ? pts[mid] : (pts[mid - 1] + pts[mid]) / 2
+}
+
 export function pricePercentile(price: number, history: number[]) {
   const pts = history.filter((n) => n > 0 && Number.isFinite(n))
   if (!pts.length || !(price > 0)) return null

@@ -78,8 +78,11 @@ button {
 }
 
 .device {
+  position: relative;
   width: min(920px, 100%);
-  background: linear-gradient(#e01436, var(--red) 40%, var(--red-dark));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 22%),
+    linear-gradient(#e01436, var(--red) 40%, var(--red-dark));
   border: 6px solid var(--ink);
   box-shadow:
     0 0 0 4px var(--red-deep),
@@ -87,11 +90,71 @@ button {
   padding: 12px 12px 10px;
 }
 
+.screw {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 30%, #ffb3bb, #d41a3c 54%, #5a0816);
+  box-shadow: 2px 2px 0 #3a0710;
+  z-index: 2;
+}
+
+.screw::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: 50%;
+  height: 2px;
+  background: #3a0710;
+  transform: translateY(-50%);
+}
+
+.screw.tl {
+  top: 8px;
+  left: 8px;
+}
+
+.screw.tr {
+  top: 8px;
+  right: 8px;
+}
+
+.screw.bl {
+  bottom: 8px;
+  left: 8px;
+}
+
+.screw.br {
+  bottom: 8px;
+  right: 8px;
+}
+
+.device-speaker {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 0 2px;
+}
+
+.device-speaker span {
+  width: 22px;
+  height: 6px;
+  background: linear-gradient(#2a050c, #140206);
+  border: 2px solid var(--ink);
+  box-shadow:
+    inset 0 1px 0 #000,
+    1px 1px 0 #ff6b7a;
+}
+
 .device-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 8px 12px;
+  padding: 6px 28px 12px;
 }
 
 .led {
@@ -1026,7 +1089,7 @@ button {
 
 .party-main {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 14px;
   text-align: left;
@@ -1037,38 +1100,116 @@ button {
 .party-meta {
   min-width: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 6px;
+}
+
+.party-id {
+  min-width: 0;
+  display: grid;
   gap: 6px;
 }
 
-.party-pnl,
+.party-meta b {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.party-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.party-meta b small {
+  font-weight: 700;
+  opacity: 0.62;
+}
+
+.party-stats {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  column-gap: 12px;
+  min-width: 0;
+}
+
 .party-quote {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px 10px;
+  min-width: 0;
+  align-self: center;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.party-quote strong {
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.party-quote small {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.party-meta .rank-row {
+  grid-column: 1 / -1;
+}
+
+.party-fund {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  align-items: start;
+  column-gap: 14px;
+  min-width: 0;
+  padding-right: 12px;
+  border-right: 3px dashed #cfc6b0;
+  font-variant-numeric: tabular-nums;
+}
+
+.party-fund span {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+}
+
+.party-fund small {
+  font-size: 11px;
+  line-height: 1.3;
+  opacity: 0.7;
+}
+
+.party-fund b {
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.party-pnl {
   display: grid;
   justify-items: center;
   text-align: center;
   align-content: center;
   row-gap: 4px;
+  min-width: 78px;
   font-variant-numeric: tabular-nums;
 }
 
-.party-pnl {
-  min-width: 78px;
-  padding-right: 12px;
-  border-right: 3px dashed #cfc6b0;
-}
-
-.party-quote {
-  min-width: 80px;
-  padding-left: 2px;
-}
-
-.party-pnl strong,
-.party-quote strong {
+.party-pnl strong {
   font-size: 15px;
   line-height: 1.2;
 }
 
-.party-pnl small,
-.party-quote small {
+.party-pnl small {
   font-size: 11px;
   line-height: 1.3;
 }
@@ -1286,17 +1427,34 @@ button {
 .star-row {
   width: 100%;
   display: grid;
-  grid-template-columns: 48px 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   border: 3px solid var(--ink);
   background: #fff;
   padding: 6px 8px;
   text-align: left;
 }
 
+.star-row .sprite {
+  flex: 0 0 auto;
+}
+
+.star-row > span {
+  min-width: 0;
+}
+
+.star-row b,
+.star-row small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .star-row strong {
   font-size: 14px;
+  white-space: nowrap;
 }
 
 .id-photo,
@@ -1384,6 +1542,12 @@ button {
 
 .field.can-walk {
   cursor: pointer;
+}
+
+.field.battling {
+  height: auto;
+  min-height: 280px;
+  overflow: visible;
 }
 
 .cloud {
@@ -2040,9 +2204,16 @@ button {
   html,
   body,
   #root {
+    display: flex;
+    flex-direction: column;
     height: 100%;
     max-height: 100dvh;
     overflow: hidden;
+  }
+
+  #root {
+    flex: 1;
+    min-height: 0;
   }
 
   button,
@@ -2063,27 +2234,72 @@ button {
     font-size: 16px;
   }
 
+  body {
+    background:
+      repeating-linear-gradient(90deg, #6e0b1a 0 8px, #4a0612 8px 16px),
+      var(--red-deep);
+  }
+
   .device-wrap {
-    display: block;
+    display: flex;
+    flex: 1;
     height: 100%;
-    min-height: 100%;
-    padding: 0;
+    min-height: 0;
+    overflow: hidden;
+    place-items: stretch;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding:
+      max(10px, env(safe-area-inset-top, 0px))
+      14px
+      max(14px, env(safe-area-inset-bottom, 0px))
+      10px;
   }
 
   .device {
     width: 100%;
     height: 100%;
-    min-height: 100%;
-    border-width: 0;
-    box-shadow: none;
-    padding: 0;
+    min-height: 0;
+    max-height: 100%;
+    flex: 1 1 auto;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    border-width: 5px;
+    box-shadow:
+      0 0 0 3px var(--red-deep),
+      6px 7px 0 var(--shadow);
+    padding: 10px 8px 8px;
+  }
+
+  .screw {
+    width: 12px;
+    height: 12px;
+  }
+
+  .screw.tl,
+  .screw.tr {
+    top: 6px;
+  }
+
+  .screw.bl,
+  .screw.br {
+    bottom: 6px;
+  }
+
+  .screw.tl,
+  .screw.bl {
+    left: 6px;
+  }
+
+  .screw.tr,
+  .screw.br {
+    right: 6px;
   }
 
   .device-top {
     flex: 0 0 auto;
-    padding: max(8px, env(safe-area-inset-top, 0px)) 12px 8px;
+    padding: 4px 22px 8px;
   }
 
   .brand {
@@ -2098,21 +2314,41 @@ button {
   }
 
   .screen {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-height: 0;
     max-height: none;
-    border-width: 0;
-    box-shadow: none;
+    border: 5px solid #0b0b0b;
+    box-shadow:
+      inset 0 0 0 6px #cfc6b0,
+      inset 0 0 0 8px #1a1a1a;
+    padding: 8px;
     overflow: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
 
+  .screen-title {
+    box-shadow:
+      inset 0 0 0 6px #2a0a10,
+      inset 0 0 0 8px #000;
+  }
+
+  .device-speaker {
+    flex: 0 0 auto;
+    gap: 4px;
+    padding: 7px 0 3px;
+  }
+
+  .device-speaker span {
+    width: 16px;
+    height: 4px;
+  }
+
   .device-nav {
     flex: 0 0 auto;
     gap: 6px;
-    padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+    padding: 4px 2px 2px;
   }
 
   .device-nav button {
@@ -2154,6 +2390,16 @@ button {
     flex: 0 0 auto;
     flex-wrap: wrap;
     justify-content: flex-end;
+  }
+
+  .party-panel .panel-head.row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .party-panel .head-ops {
+    flex-wrap: nowrap;
   }
 
   .title-screen {
@@ -2231,13 +2477,13 @@ button {
   .dex-name,
   .party-meta,
   .party-pnl,
+  .party-fund,
   .party-quote {
     min-width: 0;
   }
 
   .dex-name b,
-  .dex-name small,
-  .party-meta b {
+  .dex-name small {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2272,9 +2518,10 @@ button {
   }
 
   .party-main {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
     column-gap: 10px;
-    row-gap: 8px;
+    row-gap: 10px;
   }
 
   .party-main > :first-child {
@@ -2287,19 +2534,37 @@ button {
     grid-row: 1;
   }
 
-  .party-pnl {
-    grid-column: 1;
-    grid-row: 2;
-    min-width: 0;
-    padding-right: 0;
-    border-right: none;
-    justify-items: start;
-    text-align: left;
+  .party-meta b small {
+    flex: 0 0 auto;
   }
 
-  .party-quote {
-    grid-column: 2;
+  .party-stats {
+    grid-column: 1 / -1;
     grid-row: 2;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 10px;
+    padding-top: 8px;
+    border-top: 3px dashed #cfc6b0;
+  }
+
+  .party-fund {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding-right: 0;
+    border-right: none;
+    column-gap: 8px;
+    row-gap: 0;
+    justify-items: start;
+  }
+
+  .party-fund small {
+    font-size: 10px;
+  }
+
+  .party-fund b {
+    font-size: 13px;
+  }
+
+  .party-pnl {
     min-width: 0;
     justify-items: end;
     text-align: right;
@@ -2352,12 +2617,19 @@ button {
     height: 190px;
   }
 
+  .field.battling {
+    height: auto;
+    min-height: 260px;
+    overflow: visible;
+  }
+
   .wild-box {
     min-width: 0;
-    width: min(100%, 280px);
-    max-width: calc(100% - 8px);
+    width: min(100%, 100%);
+    max-width: 100%;
     box-shadow: 4px 4px 0 #0f380f;
     padding: 8px 10px 10px;
+    overflow: visible;
   }
 
   .wild-name {
@@ -2365,12 +2637,22 @@ button {
     word-break: break-all;
   }
 
+  .wild-quote {
+    flex-wrap: wrap;
+    font-size: 15px;
+  }
+
+  .wild-box .rank-row {
+    margin-top: 6px;
+  }
+
   .msg-box {
     min-height: 72px;
   }
 
   .star-row {
-    grid-template-columns: 40px minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
   }
 
   .hold-fields {
@@ -2417,6 +2699,10 @@ button {
     height: 168px;
   }
 
+  .field.battling {
+    min-height: 240px;
+  }
+
   .dex-row {
     grid-template-columns: 36px 36px minmax(0, 1fr) 18px;
     gap: 6px;
@@ -2430,11 +2716,25 @@ button {
 
 @media (max-width: 720px) and (max-height: 540px) {
   .device-top {
-    display: none;
+    padding: 2px 20px 6px;
+  }
+
+  .led,
+  .lens {
+    transform: scale(0.7);
+  }
+
+  .device-speaker {
+    padding: 5px 0 2px;
   }
 
   .field {
     height: 132px;
+  }
+
+  .field.battling {
+    min-height: 220px;
+    height: auto;
   }
 
   .title-screen {
