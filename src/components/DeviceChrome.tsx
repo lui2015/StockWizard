@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useGame } from '../store/gameStore'
 import type { Screen } from '../data/types'
 import { sfx } from '../utils/sound'
@@ -10,19 +10,38 @@ const NAV: { id: Screen['name']; label: string }[] = [
   { id: 'trainer', label: '训练家' },
 ]
 
+const IMMERSIVE_KEY = 'stock-wizard-immersive'
+
 export function DeviceChrome({ children }: { children: ReactNode }) {
   const { screen, setScreen, play } = useGame()
   const hideNav = screen.name === 'title'
+  const [immersive, setImmersive] = useState(() => localStorage.getItem(IMMERSIVE_KEY) === '1')
+
+  useEffect(() => {
+    localStorage.setItem(IMMERSIVE_KEY, immersive ? '1' : '0')
+  }, [immersive])
+
+  const toggleImmersive = () => {
+    play(sfx.blip)
+    setImmersive((v) => !v)
+  }
 
   return (
-    <div className="device-wrap">
-      <div className="device">
+    <div className={`device-wrap${immersive ? ' immersive' : ''}`}>
+      <div className={`device${immersive ? ' immersive' : ''}`}>
         <i className="screw tl" aria-hidden />
         <i className="screw tr" aria-hidden />
         <header className="device-top">
           <span className="led" />
           <span className="brand">STOCK WIZARD</span>
-          <span className="lens" />
+          <button
+            className="lens-btn"
+            onClick={toggleImmersive}
+            title={immersive ? '退出全屏' : '全屏展示（隐藏机身边框）'}
+            aria-label="切换全屏展示"
+          >
+            <span className="lens" />
+          </button>
         </header>
         <div className={`screen ${screen.name === 'title' ? 'screen-title' : ''}`}>
           {children}
@@ -59,6 +78,11 @@ export function DeviceChrome({ children }: { children: ReactNode }) {
         ) : null}
         <i className="screw bl" aria-hidden />
         <i className="screw br" aria-hidden />
+        {immersive ? (
+          <button className="immersive-exit" onClick={toggleImmersive}>
+            退出全屏
+          </button>
+        ) : null}
       </div>
     </div>
   )

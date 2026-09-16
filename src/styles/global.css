@@ -2964,3 +2964,56 @@ button {
     padding: 12px;
   }
 }
+
+/* 沉浸模式：隐藏机身边框，只保留内容，获得更大视野 */
+.lens-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  line-height: 0;
+}
+
+.device-wrap.immersive {
+  display: block;
+  padding: 0;
+  min-height: 100dvh;
+}
+
+.device.immersive {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+  max-height: none;
+  background: var(--screen);
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.device.immersive .device-top,
+.device.immersive .device-speaker,
+.device.immersive .screw {
+  display: none;
+}
+
+.device.immersive .screen {
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  border: none;
+  box-shadow: none;
+}
+
+.immersive-exit {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 60;
+  background: var(--white);
+  border: 3px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 6px 10px;
+  font-size: 12px;
+}
