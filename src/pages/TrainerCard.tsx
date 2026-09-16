@@ -9,7 +9,6 @@ import { sfx } from '../utils/sound'
 export function TrainerCard() {
   const { save, catalog, quotes, getSprite, rename, setScreen, play, switchSquad } = useGame()
   const [name, setName] = useState(save.trainerName)
-  const title = trainerTitle(save.captured.length, catalog.length)
   const priceOf = (id: string) => {
     try {
       return quotes[id]?.price || getSprite(id).basePrice
@@ -20,6 +19,7 @@ export function TrainerCard() {
 
   const holdIds = save.captured.filter((id) => save.holdings[id])
   const book = bookOf(holdIds, save.holdings, quotes, priceOf)
+  const title = trainerTitle(book.count > 0 ? book.pct : null, save.captured.length, catalog.length)
   const squadBooks = save.squads.map((squad) => ({
     squad,
     book: bookOf(

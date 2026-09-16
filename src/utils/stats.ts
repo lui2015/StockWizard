@@ -36,13 +36,14 @@ export function catchRate(
   return Math.max(0.16, Math.min(0.82, rate))
 }
 
-export function trainerTitle(captured: number, total: number) {
-  if (captured >= total) return '图鉴完成者'
-  if (captured >= 20) return '冠军挑战者'
-  if (captured >= 12) return '图鉴研究员'
-  if (captured >= 6) return '正式训练家'
-  if (captured >= 1) return '新人训练家'
-  return '路过的观察员'
+export function trainerTitle(pct: number | null, captured = 0, total = 0) {
+  if (total > 0 && captured >= total) return '图鉴完成者'
+  if (pct == null) return '路过的观察员'
+  if (pct >= 20) return '投资冠军'
+  if (pct >= 10) return '冠军挑战者'
+  if (pct >= 5) return '精英训练家'
+  if (pct >= 2) return '正式训练家'
+  return '新人训练家'
 }
 
 export function rarityLabel(rarity: StockSprite['rarity']) {
