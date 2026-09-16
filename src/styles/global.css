@@ -3006,13 +3006,6 @@ button {
   display: none;
 }
 
-.immersive-tag {
-  font-size: 11px;
-  letter-spacing: 2px;
-  color: var(--ink);
-  opacity: 0.55;
-}
-
 .device.immersive .device-speaker,
 .device.immersive .screw {
   display: none;
@@ -3025,15 +3018,4 @@ button {
   max-height: none;
   border: none;
   box-shadow: none;
-}
-
-.lens-btn.as-text {
-  width: auto;
-  height: auto;
-  background: var(--white);
-  border: 3px solid var(--ink);
-  box-shadow: 3px 3px 0 var(--ink);
-  padding: 5px 10px;
-  font-size: 12px;
-  line-height: 1.4;
 }
