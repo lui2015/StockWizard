@@ -5,14 +5,21 @@ interface FinRow {
   REPORT_DATE?: string
   PARENTNETPROFIT?: number
   PARENTNETPROFITTZ?: number
+  HOLDER_PROFIT?: number
+  HOLDER_PROFIT_YOY?: number
 }
 
-/** 东财 quoteId → F10 SECUCODE：1.600519 → 600519.SH */
-function secuOf(quoteId: string): string | null {
+interface SecuInfo {
+  secu: string
+  market: 'cn' | 'hk'
+}
+
+/** 东财 quoteId → F10 SECUCODE：1.600519 → 600519.SH / 116.00700 → 00700.HK */
+function secuOf(quoteId: string): SecuInfo | null {
   const [mkt, code] = quoteId.split('.')
-  if (mkt === '1') return `${code}.SH`
-  if (mkt === '0') return `${code}.SZ`
-  if (mkt === '116') return `${code}.HK`
+  if (mkt === '1') return { secu: `${code}.SH`, market: 'cn' }
+  if (mkt === '0') return { secu: `${code}.SZ`, market: 'cn' }
+  if (mkt === '116') return { secu: `${code}.HK`, market: 'hk' }
   return null
 }
 
@@ -40,22 +47,29 @@ export function ProfitChart({ quoteId }: { quoteId: string }) {
     }
     let alive = true
     setStatus('load')
-    const filter = encodeURIComponent(`(SECUCODE="${secu}")`)
-    const url = api(
-      `/radar/fin?type=RPT_F10_FINANCE_MAINFINADATA&sty=APP_F10_MAINFINADATA&filter=${filter}&p=1&ps=40&sr=-1&st=REPORT_DATE&source=HSF10&client=PC`,
-    )
+    const filter = encodeURIComponent(`(SECUCODE="${secu.secu}")`)
+    // A股与港股使用不同的报表与网关
+    const url =
+      secu.market === 'cn'
+        ? api(
+            `/radar/fin?type=RPT_F10_FINANCE_MAINFINADATA&sty=APP_F10_MAINFINADATA&filter=${filter}&p=1&ps=40&sr=-1&st=REPORT_DATE&source=HSF10&client=PC`,
+          )
+        : api(
+            `/radar/finv1?reportName=RPT_HKF10_FN_MAININDICATOR&columns=ALL&filter=${filter}&pageNumber=1&pageSize=40&sortTypes=-1&sortColumns=REPORT_DATE&source=F10&client=PC`,
+          )
     fetch(url, { headers: { Accept: 'application/json' } })
       .then((r) => r.json())
       .then((j: { result?: { data?: FinRow[] } }) => {
         if (!alive) return
         const data = j.result?.data ?? []
         const annual = data
-          .filter((x) => (x.REPORT_DATE ?? '').includes('-12-31') && typeof x.PARENTNETPROFIT === 'number')
+          .filter((x) => (x.REPORT_DATE ?? '').includes('-12-31'))
+          .filter((x) => typeof (secu.market === 'cn' ? x.PARENTNETPROFIT : x.HOLDER_PROFIT) === 'number')
           .slice(0, 5)
           .map((x) => ({
             year: (x.REPORT_DATE ?? '').slice(0, 4),
-            profit: x.PARENTNETPROFIT as number,
-            yoy: x.PARENTNETPROFITTZ,
+            profit: (secu.market === 'cn' ? x.PARENTNETPROFIT : x.HOLDER_PROFIT) as number,
+            yoy: secu.market === 'cn' ? x.PARENTNETPROFITTZ : x.HOLDER_PROFIT_YOY,
           }))
           .reverse()
         setRows(annual)

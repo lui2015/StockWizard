@@ -209,6 +209,12 @@ button {
   margin-top: 12px;
 }
 
+.account-strip {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
 .fin-chart h3 {
   font-size: 14px;
   margin-bottom: 8px;

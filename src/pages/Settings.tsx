@@ -1,8 +1,17 @@
+import { useState } from 'react'
 import { useGame } from '../store/gameStore'
 import { sfx } from '../utils/sound'
 
 export function Settings() {
-  const { save, toggleSound, reset, setScreen, play } = useGame()
+  const { save, toggleSound, reset, setScreen, play, user, logout } = useGame()
+  const [busy, setBusy] = useState(false)
+
+  const signOut = async () => {
+    setBusy(true)
+    await logout()
+    play(sfx.blip)
+    setBusy(false)
+  }
 
   return (
     <div className="panel settings-panel">
@@ -42,6 +51,22 @@ export function Settings() {
         >
           重置图鉴
         </button>
+        <h3>账号</h3>
+        {user ? (
+          <div className="account-strip">
+            <p className="book-meta">已登录：{user.username} · 队伍与持仓自动云同步</p>
+            <button className="btn ghost" disabled={busy} onClick={() => void signOut()}>
+              退出登录
+            </button>
+          </div>
+        ) : (
+          <div className="account-strip">
+            <p className="book-meta">未登录，进度只保存在本机浏览器。</p>
+            <button className="btn" onClick={() => setScreen({ name: 'account' })}>
+              登录 / 注册
+            </button>
+          </div>
+        )}
         <h3>声明</h3>
         <p className="fine">
           股票精灵是娱乐向图鉴。现价与分时来自东方财富公开接口，不构成任何投资建议，也不提供交易下单。请不要把「捕捉成功率」理解成买卖信号。

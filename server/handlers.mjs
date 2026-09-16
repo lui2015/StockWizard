@@ -30,6 +30,7 @@ const ROUTES = {
   ],
   '/radar/eva': ['https://danjuanfunds.com/djapi/index_eva/dj'],
   '/radar/fin': ['https://datacenter.eastmoney.com/securities/api/data/get'],
+  '/radar/finv1': ['https://datacenter.eastmoney.com/securities/api/data/v1/get'],
 }
 
 const UPSTREAM_HEADERS = {
