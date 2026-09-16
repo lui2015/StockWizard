@@ -1,7 +1,7 @@
-import { SECTOR_META } from '../data/sectors'
 import { DialogBox } from '../components/DialogBox'
 import { PixelSprite } from '../components/PixelSprite'
 import { PriceChart } from '../components/PriceChart'
+import { ProfitChart } from '../components/ProfitChart'
 import { HoldingPanel } from '../components/HoldingPanel'
 import { MetricList } from '../components/MetricList'
 import { TypeBadge } from '../components/TypeBadge'
@@ -9,9 +9,9 @@ import { useEffect, useState } from 'react'
 import { fetchChart } from '../api/chart'
 import { useGame } from '../store/gameStore'
 import { moveLog } from '../utils/moves'
-import { listingOf } from '../utils/quoteId'
+import { listingOf, quoteIdOf } from '../utils/quoteId'
 import { changePct, dayRange, formatPrice, formatTime, percentileNote, pricePercentile } from '../utils/quotes'
-import { advice, levelOf, rarityLabel } from '../utils/stats'
+import { levelOf, rarityLabel } from '../utils/stats'
 import { sfx } from '../utils/sound'
 
 export function DexDetail({ id, tab = 'dex' }: { id: string; tab?: 'dex' | 'observe' | 'analyze' }) {
@@ -275,17 +275,7 @@ export function DexDetail({ id, tab = 'dex' }: { id: string; tab?: 'dex' | 'obse
               ) : (
                 <p className="empty">正在接入市盈率、市净率等分析指标…</p>
               )}
-              <div className="type-note">
-                {stock.types.map((t) => (
-                  <div key={t} className="type-note-row">
-                    <TypeBadge type={t} />
-                    <p>
-                      {SECTOR_META[t].hint} 观察点：{SECTOR_META[t].watch}。
-                    </p>
-                  </div>
-                ))}
-              </div>
-              <div className="advice">分析备忘：{advice(stock, quote)}</div>
+              <ProfitChart quoteId={quoteIdOf(stock)} />
             </>
           )}
         </section>

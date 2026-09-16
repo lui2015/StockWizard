@@ -28,6 +28,7 @@ const ROUTES = {
     'https://79.push2.eastmoney.com/api/qt/clist/get',
   ],
   '/radar/eva': ['https://danjuanfunds.com/djapi/index_eva/dj'],
+  '/radar/fin': ['https://datacenter.eastmoney.com/securities/api/data/get'],
 }
 
 const UPSTREAM_HEADERS = {
