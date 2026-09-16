@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { fetchLiveQuote, type MarketHit } from '../api/eastmoney'
+import { fetchLiveQuote, fetchMarketTape, type MarketHit } from '../api/eastmoney'
 import { STOCKS } from '../data/stocks'
 import { CatchFanfare } from '../components/CatchFanfare'
 import { MarketTape } from '../components/MarketTape'
@@ -49,6 +49,15 @@ const DECOR = [
 
 const HOME = { left: '50%', top: '78%' }
 
+// 天气雨滴的确定性伪随机参数，避免每次渲染抖动
+const RAINS = Array.from({ length: 26 }, (_, i) => ({
+  left: `${(i * 37 + 13) % 100}%`,
+  delay: (((i * 17) % 100) / 100) * 1.2,
+  dur: 0.8 + ((i * 29) % 50) / 100,
+}))
+
+type Weather = 'sun' | 'rain' | null
+
 const FLAVOR = [
   '草沙沙响，什么也没有。',
   '拨晚了，精灵钻回去了。',
@@ -76,8 +85,39 @@ export function Grassland() {
   const phaseRef = useRef(phase)
   const [msg, setMsg] = useState('草丛会自己晃。点中晃着的那丛，或按拨草，才可能跳出精灵。')
   const [dayCloses, setDayCloses] = useState<number[]>([])
+  const [weather, setWeather] = useState<Weather>(null)
 
   phaseRef.current = phase
+
+  // 天气：A股/港股/美股代表指数全跌 → 下雨，全涨 → 阳光，其余维持原样
+  useEffect(() => {
+    let alive = true
+    const pull = async () => {
+      try {
+        const rows = await fetchMarketTape()
+        if (!alive) return
+        const pick = (id: string) => rows.find((row) => row.id === id)?.pct
+        const pcts = [pick('1.000001'), pick('100.HSI'), pick('100.DJIA')]
+        if (pcts.some((p) => p == null)) {
+          setWeather(null)
+        } else if (pcts.every((p) => (p as number) < 0)) {
+          setWeather('rain')
+        } else if (pcts.every((p) => (p as number) > 0)) {
+          setWeather('sun')
+        } else {
+          setWeather(null)
+        }
+      } catch {
+        // 行情拿不到时保持当前天气
+      }
+    }
+    void pull()
+    const t = window.setInterval(pull, 60000)
+    return () => {
+      alive = false
+      window.clearInterval(t)
+    }
+  }, [])
   hotRef.current = hot
 
   useEffect(() => {
@@ -353,7 +393,7 @@ export function Grassland() {
       <div
         className={`field hunt ${phase === 'flash' ? 'flash' : ''} ${phase === 'caught' ? 'caught' : ''} ${
           phase === 'battle' || phase === 'ball' || phase === 'result' ? 'battling' : ''
-        }`}
+        } ${weather ? `weather-${weather}` : ''}`}
       >
         <span className="cloud puff c1"><i /><i /><i /></span>
         <span className="cloud puff c2"><i /><i /><i /></span>
@@ -361,6 +401,30 @@ export function Grassland() {
         <span className="cloud puff c4"><i /><i /><i /></span>
         <span className="cloud puff c5"><i /><i /></span>
         <i className="sun" />
+        {weather === 'sun' ? (
+          <div className="weather sunshine" aria-hidden>
+            <span className="rays">
+              {Array.from({ length: 8 }, (_, i) => (
+                <i key={i} style={{ transform: `rotate(${i * 45}deg) translateY(-30px)` }} />
+              ))}
+            </span>
+          </div>
+        ) : null}
+        {weather === 'rain' ? (
+          <div className="weather rain" aria-hidden>
+            {RAINS.map((drop, i) => (
+              <i
+                key={i}
+                className="raindrop"
+                style={{
+                  left: drop.left,
+                  animationDelay: `${drop.delay}s`,
+                  animationDuration: `${drop.dur}s`,
+                }}
+              />
+            ))}
+          </div>
+        ) : null}
         {phase === 'walk' || phase === 'flash'
           ? DECOR.map((item, i) => (
               <i key={`d-${i}`} className={`tuft decor ${i % 2 ? 'sway' : ''}`} style={{ left: item.left, top: item.top }} />
