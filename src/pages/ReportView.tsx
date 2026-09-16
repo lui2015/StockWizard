@@ -7,6 +7,16 @@ export function ReportView({ id }: { id: string }) {
   const { setScreen } = useGame()
   const [title, setTitle] = useState('分析报告')
   const [error, setError] = useState('')
+  const [fullscreen, setFullscreen] = useState(false)
+
+  useEffect(() => {
+    if (!fullscreen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [fullscreen])
 
   useEffect(() => {
     let alive = true
@@ -23,15 +33,26 @@ export function ReportView({ id }: { id: string }) {
   }, [id])
 
   return (
-    <div className="panel report-view">
+    <div className={fullscreen ? 'panel report-view fullscreen' : 'panel report-view'}>
       <header className="panel-head row">
         <div>
           <h2>{title}</h2>
           <p>仅供阅读 · 不构成投资建议</p>
         </div>
-        <button className="tiny" onClick={() => setScreen({ name: 'reports' })}>
-          返回
-        </button>
+        <div className="head-ops">
+          <button className="tiny" onClick={() => setFullscreen((v) => !v)}>
+            {fullscreen ? '退出全屏' : '全屏'}
+          </button>
+          <button
+            className="tiny"
+            onClick={() => {
+              setFullscreen(false)
+              setScreen({ name: 'reports' })
+            }}
+          >
+            返回
+          </button>
+        </div>
       </header>
       {error ? (
         <p className="empty">{error}</p>
