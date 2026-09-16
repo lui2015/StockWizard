@@ -198,10 +198,13 @@ export function IndexDetail({ index, onClose }: { index: TapeIndex; onClose: () 
               <b>{eva && eva.pe_percentile > 0 ? `${Math.round(eva.pe_percentile * 100)}%` : '—'}</b>
             </li>
             <li>
-              <span>估值更新</span>
-              <b>{eva ? '每日' : '暂无'}</b>
+              <span>估值来源</span>
+              <b>{eva ? '蛋卷基金 · 每日' : '暂未收录'}</b>
             </li>
           </ul>
+          {!(eva && eva.pe > 0) ? (
+            <p className="book-meta">该指数暂无公开估值数据源，A股主要宽基指数已覆盖。</p>
+          ) : null}
         </section>
       </div>
 
