@@ -5,7 +5,6 @@ const UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
 
 const ROUTES = {
-  '/radar/search': ['https://searchapi.eastmoney.com/api/suggest/get'],
   '/radar/quote': [
     'https://push2delay.eastmoney.com/api/qt/stock/get',
     'https://push2.eastmoney.com/api/qt/stock/get',
@@ -112,6 +111,66 @@ export function createRadarMiddleware() {
         res.statusCode = 502
         res.setHeader('Content-Type', 'application/json; charset=utf-8')
         res.end(JSON.stringify({ error: 'kline upstream failed', detail: String(error) }))
+      }
+      return
+    }
+
+    // 股票联想：东财 searchapi 对非浏览器 TLS 指纹返回垃圾响应，改用腾讯 smartbox
+    if (url === '/radar/search' && req.method === 'GET') {
+      const query = new URLSearchParams(req.url.slice(req.url.indexOf('?') + 1))
+      const keyword = (query.get('input') ?? '').trim()
+      try {
+        if (!keyword) {
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'application/json; charset=utf-8')
+          res.end(JSON.stringify({ QuotationCodeTable: { Data: [] } }))
+          return
+        }
+        const upstream = await fetch(
+          `https://smartbox.gtimg.cn/s3/?v=2&t=all&q=${encodeURIComponent(keyword)}`,
+          {
+            headers: { ...UPSTREAM_HEADERS, Referer: 'https://gu.qq.com/' },
+            signal: AbortSignal.timeout(8000),
+          },
+        )
+        const text = new TextDecoder('gbk').decode(await upstream.arrayBuffer())
+        const matched = text.match(/v_hint="(.*)"/)
+        const rows = []
+        if (matched) {
+          const seen = new Set()
+          for (const item of matched[1].split('^')) {
+            const f = item.split('~')
+            const market = (f[0] ?? '').toLowerCase()
+            const code = f[1] ?? ''
+            const name = f[2] ?? ''
+            const pinyin = f[3] ?? ''
+            const kind = (f[4] ?? '').toUpperCase()
+            if (!/^(sh|sz|bj|hk)$/.test(market)) continue
+            if (kind !== 'GP' && kind !== 'GP-A') continue
+            if (/购|沽|涡轮|窝轮|期货|指数|板块|wr$/i.test(name)) continue
+            const quoteId =
+              market === 'hk' ? `116.${code}` : market === 'sh' ? `1.${code}` : `0.${code}`
+            if (seen.has(quoteId)) continue
+            seen.add(quoteId)
+            rows.push({
+              Code: code,
+              Name: name,
+              PinYin: pinyin,
+              SecurityTypeName:
+                market === 'hk' ? '港股' : market === 'sh' ? '沪A' : market === 'sz' ? '深A' : '京A',
+              QuoteID: quoteId,
+            })
+            if (rows.length >= 20) break
+          }
+        }
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json; charset=utf-8')
+        res.setHeader('Cache-Control', 'public, max-age=10')
+        res.end(JSON.stringify({ QuotationCodeTable: { Data: rows } }))
+      } catch (error) {
+        res.statusCode = 502
+        res.setHeader('Content-Type', 'application/json; charset=utf-8')
+        res.end(JSON.stringify({ error: 'radar search failed', detail: String(error) }))
       }
       return
     }
