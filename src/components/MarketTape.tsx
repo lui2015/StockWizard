@@ -3,6 +3,7 @@ import { fetchBars } from '../api/chart'
 import { fetchMarketTape, TAPE_BARS, type TapeGroup, type TapeIndex } from '../api/eastmoney'
 import { formatSigned } from '../utils/holding'
 import { formatPrice, pricePercentile } from '../utils/quotes'
+import { IndexDetail } from './IndexDetail'
 
 const GROUPS: { id: TapeGroup; label: string }[] = [
   { id: 'CN', label: 'A股' },
@@ -16,6 +17,7 @@ export function MarketTape({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [tick, setTick] = useState(0)
+  const [detail, setDetail] = useState<TapeIndex | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -74,44 +76,48 @@ export function MarketTape({ onClose }: { onClose: () => void }) {
       </header>
       {error ? <p className="empty">{error}</p> : null}
       {loading && !rows.length ? <p className="empty">正在读取各大市场天气……</p> : null}
-      {GROUPS.map((group) => {
-        const list = rows.filter((row) => row.group === group.id)
-        if (!list.length) return null
-        return (
-          <section key={group.id} className="tape-group">
-            <h3>{group.label}</h3>
-            <ol className="dex-list tape-list">
-              {list.map((row) => {
-                const rank = pricePercentile(row.price, closes[row.id] ?? [])
-                return (
-                  <li key={row.id}>
-                    <div className="tape-row">
-                      <span className="dex-name">
-                        <b>{row.name}</b>
-                        <small>{row.id.split('.')[1]}</small>
-                      </span>
-                      <div className="rank-row">
-                        <div className="hp-bar mini">
-                          <i
-                            style={{ width: `${rank ?? 0}%` }}
-                            className={rank == null ? '' : rank >= 70 ? 'ok' : rank <= 30 ? 'low' : 'mid'}
-                          />
+      {detail ? (
+        <IndexDetail index={detail} onClose={() => setDetail(null)} />
+      ) : (
+        GROUPS.map((group) => {
+          const list = rows.filter((row) => row.group === group.id)
+          if (!list.length) return null
+          return (
+            <section key={group.id} className="tape-group">
+              <h3>{group.label}</h3>
+              <ol className="dex-list tape-list">
+                {list.map((row) => {
+                  const rank = pricePercentile(row.price, closes[row.id] ?? [])
+                  return (
+                    <li key={row.id}>
+                      <button className="tape-row" onClick={() => setDetail(row)}>
+                        <span className="dex-name">
+                          <b>{row.name}</b>
+                          <small>{row.id.split('.')[1]}</small>
+                        </span>
+                        <div className="rank-row">
+                          <div className="hp-bar mini">
+                            <i
+                              style={{ width: `${rank ?? 0}%` }}
+                              className={rank == null ? '' : rank >= 70 ? 'ok' : rank <= 30 ? 'low' : 'mid'}
+                            />
+                          </div>
+                          <small>{rank == null ? '分位 —' : `${Math.round(rank)}%`}</small>
                         </div>
-                        <small>{rank == null ? '分位 —' : `${Math.round(rank)}%`}</small>
-                      </div>
-                      <strong className={row.pct >= 0 ? 'up' : 'down'}>{formatPrice(row.price)}</strong>
-                      <em className={row.pct >= 0 ? 'up' : 'down'}>
-                        {formatSigned(row.change)}
-                        <small>{formatSigned(row.pct)}%</small>
-                      </em>
-                    </div>
-                  </li>
-                )
-              })}
-            </ol>
-          </section>
-        )
-      })}
+                        <strong className={row.pct >= 0 ? 'up' : 'down'}>{formatPrice(row.price)}</strong>
+                        <em className={row.pct >= 0 ? 'up' : 'down'}>
+                          {formatSigned(row.change)}
+                          <small>{formatSigned(row.pct)}%</small>
+                        </em>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ol>
+            </section>
+          )
+        })
+      )}
     </div>
   )
 }

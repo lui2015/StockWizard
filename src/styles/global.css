@@ -314,6 +314,26 @@ button {
   background: #fff;
   box-shadow: 3px 3px 0 var(--ink);
   padding: 8px 10px;
+  width: 100%;
+  text-align: left;
+}
+
+.index-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tape-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .tape-metrics {
+    grid-template-columns: 1fr;
+  }
 }
 
 .tape-row strong {

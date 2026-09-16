@@ -28,6 +28,7 @@ const ROUTES = {
     'https://push2.eastmoney.com/api/qt/clist/get',
     'https://79.push2.eastmoney.com/api/qt/clist/get',
   ],
+  '/radar/eva': ['https://danjuanfunds.com/djapi/index_eva/dj'],
 }
 
 const UPSTREAM_HEADERS = {
@@ -65,6 +66,30 @@ export function createRadarMiddleware() {
       const query = new URLSearchParams(req.url.slice(req.url.indexOf('?') + 1))
       const symbol = query.get('symbol') ?? ''
       const period = query.get('period') ?? 'day'
+
+      // 五日分时：腾讯按天返回分钟线
+      if (period === 'day5') {
+        try {
+          const upstream = await fetch(
+            `https://web.ifzq.gtimg.cn/appstock/app/day/query?code=${encodeURIComponent(symbol)}`,
+            {
+              headers: { ...UPSTREAM_HEADERS, Referer: 'https://gu.qq.com/' },
+              signal: AbortSignal.timeout(8000),
+            },
+          )
+          const body = await upstream.text()
+          res.statusCode = upstream.status
+          res.setHeader('Content-Type', 'application/json; charset=utf-8')
+          res.setHeader('Cache-Control', 'public, max-age=60')
+          res.end(body)
+        } catch (error) {
+          res.statusCode = 502
+          res.setHeader('Content-Type', 'application/json; charset=utf-8')
+          res.end(JSON.stringify({ error: 'kline upstream failed', detail: String(error) }))
+        }
+        return
+      }
+
       const asked = Number(query.get('lmt'))
       const fallback = period === 'day' ? 100 : period === 'week' ? 72 : 48
       const lmt = Number.isFinite(asked) ? Math.min(1300, Math.max(20, Math.round(asked))) : fallback
