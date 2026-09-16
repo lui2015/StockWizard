@@ -61,7 +61,6 @@ export function MainMenu() {
           </li>
         ))}
       </ul>
-      <p className="fine">方向键选择 · Enter 确认 · 实时行情约 12 秒刷新</p>
     </div>
   )
 }
