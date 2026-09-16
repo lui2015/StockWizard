@@ -108,6 +108,7 @@ export function StockRadar({
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => {
+            if (e.nativeEvent.isComposing) return
             if (e.key === 'ArrowDown') {
               e.preventDefault()
               if (hits.length) setActive((i) => (i + 1) % hits.length)

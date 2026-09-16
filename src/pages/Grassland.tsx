@@ -191,6 +191,9 @@ export function Grassland() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.isComposing) return
+      const target = e.target as HTMLElement | null
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
       if (phaseRef.current !== 'walk') return
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault()
