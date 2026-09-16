@@ -135,6 +135,9 @@ export function createRadarMiddleware() {
         )
         const text = new TextDecoder('gbk').decode(await upstream.arrayBuffer())
         const matched = text.match(/v_hint="(.*)"/)
+        // 腾讯接口的中文是字面 \uXXXX 转义，需要还原
+        const unescape = (s) =>
+          s.replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
         const rows = []
         if (matched) {
           const seen = new Set()
@@ -142,8 +145,8 @@ export function createRadarMiddleware() {
             const f = item.split('~')
             const market = (f[0] ?? '').toLowerCase()
             const code = f[1] ?? ''
-            const name = f[2] ?? ''
-            const pinyin = f[3] ?? ''
+            const name = unescape(f[2] ?? '')
+            const pinyin = unescape(f[3] ?? '')
             const kind = (f[4] ?? '').toUpperCase()
             if (!/^(sh|sz|bj|hk)$/.test(market)) continue
             if (kind !== 'GP' && kind !== 'GP-A') continue
