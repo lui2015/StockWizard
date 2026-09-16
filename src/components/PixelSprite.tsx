@@ -8,7 +8,7 @@ const SIZE: Record<string, number> = { sm: 4, md: 6, lg: 8, xl: 12 }
 
 const BUILTIN_IDS = new Set(STOCKS.map((s) => s.id))
 
-const SHAPE_KEYS = Object.keys(SHAPES)
+const SHAPE_KEYS = Object.keys(SHAPES) as Array<keyof typeof SHAPES>
 
 /** xorshift 随机数：由 seed 确定性生成，同一股票每次渲染结果一致 */
 function makeRand(seed: number) {
@@ -27,16 +27,16 @@ function makeRand(seed: number) {
  * 在基础造型上做确定性变异：镜像、轮廓凿角、边缘凸起。
  * 只动轮廓(1)与空位(0)，不碰高光/花纹(2/3/4)，保证表情不变形。
  */
-function mutateGrid(grid: number[][], seed: number): number[][] {
+function mutateGrid(grid: readonly (readonly number[])[], seed: number): number[][] {
   const rand = makeRand(seed)
   const H = grid.length
-  const at = (g: number[][], x: number, y: number) =>
+  const at = (g: readonly (readonly number[])[], x: number, y: number) =>
     y >= 0 && y < H && x >= 0 && x < g[y].length ? g[y][x] : 0
   const flipped = rand() > 0.5
 
   // 第一遍：镜像 + 轮廓凿角
   let out = grid.map((row, y) =>
-    row.map((cell, x) => {
+    row.map((_cell, x) => {
       const sx = flipped ? row.length - 1 - x : x
       const src = row[sx]
       if (src !== 1) return src
