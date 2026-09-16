@@ -400,6 +400,7 @@ export interface TapeIndex {
   id: string
   group: TapeGroup
   name: string
+  bar: string
   price: number
   pct: number
   change: number
