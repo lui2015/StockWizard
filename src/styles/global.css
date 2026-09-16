@@ -2967,10 +2967,16 @@ button {
 
 /* 沉浸模式：隐藏机身边框，只保留内容，获得更大视野 */
 .lens-btn {
-  background: none;
-  border: none;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 30px;
   padding: 0;
   line-height: 0;
+  background: none;
+  border: none;
 }
 
 .device-wrap.immersive {
@@ -2991,7 +2997,22 @@ button {
   padding: 0;
 }
 
-.device.immersive .device-top,
+.device.immersive .device-top {
+  padding: 6px 12px 4px;
+  background: var(--screen);
+}
+
+.device.immersive .device-top .brand {
+  display: none;
+}
+
+.immersive-tag {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--ink);
+  opacity: 0.55;
+}
+
 .device.immersive .device-speaker,
 .device.immersive .screw {
   display: none;
@@ -3006,14 +3027,13 @@ button {
   box-shadow: none;
 }
 
-.immersive-exit {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 60;
+.lens-btn.as-text {
+  width: auto;
+  height: auto;
   background: var(--white);
   border: 3px solid var(--ink);
   box-shadow: 3px 3px 0 var(--ink);
-  padding: 6px 10px;
+  padding: 5px 10px;
   font-size: 12px;
+  line-height: 1.4;
 }

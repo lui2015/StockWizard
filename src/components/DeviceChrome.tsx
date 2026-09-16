@@ -33,14 +33,14 @@ export function DeviceChrome({ children }: { children: ReactNode }) {
         <i className="screw tr" aria-hidden />
         <header className="device-top">
           <span className="led" />
-          <span className="brand">STOCK WIZARD</span>
+          {!immersive ? <span className="brand">STOCK WIZARD</span> : <span className="immersive-tag">沉浸模式</span>}
           <button
-            className="lens-btn"
+            className={`lens-btn${immersive ? ' as-text' : ''}`}
             onClick={toggleImmersive}
             title={immersive ? '退出全屏' : '全屏展示（隐藏机身边框）'}
             aria-label="切换全屏展示"
           >
-            <span className="lens" />
+            {immersive ? '退出全屏' : <span className="lens" />}
           </button>
         </header>
         <div className={`screen ${screen.name === 'title' ? 'screen-title' : ''}`}>
@@ -78,11 +78,6 @@ export function DeviceChrome({ children }: { children: ReactNode }) {
         ) : null}
         <i className="screw bl" aria-hidden />
         <i className="screw br" aria-hidden />
-        {immersive ? (
-          <button className="immersive-exit" onClick={toggleImmersive}>
-            退出全屏
-          </button>
-        ) : null}
       </div>
     </div>
   )
