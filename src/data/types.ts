@@ -22,6 +22,7 @@ export type Screen =
   | { name: 'grass' }
   | { name: 'party' }
   | { name: 'trainer' }
+  | { name: 'academy' }
   | { name: 'reports' }
   | { name: 'report'; id: string }
   | { name: 'settings' }

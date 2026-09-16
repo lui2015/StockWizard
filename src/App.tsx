@@ -11,6 +11,7 @@ import { TitleScreen } from './pages/TitleScreen'
 import { Reports } from './pages/Reports'
 import { ReportView } from './pages/ReportView'
 import { TrainerCard } from './pages/TrainerCard'
+import { AcademyView } from './pages/AcademyView'
 
 export function App() {
   const { screen, setScreen } = useGame()
@@ -37,6 +38,9 @@ export function App() {
       break
     case 'trainer':
       view = <TrainerCard />
+      break
+    case 'academy':
+      view = <AcademyView />
       break
     case 'reports':
       view = <Reports />

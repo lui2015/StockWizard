@@ -7,7 +7,7 @@ const ITEMS: { name: Screen['name']; title: string; desc: string }[] = [
   { name: 'party', title: '我的队伍', desc: '可建多支队伍，每队最多 6 只' },
   { name: 'dex', title: '精灵图鉴', desc: '查看 24 只股票精灵的编号与记录' },
   { name: 'grass', title: '野外草地', desc: '走入草丛，遭遇并尝试捕捉' },
-  { name: 'trainer', title: '训练家证', desc: '收集进度、称号与存档' },
+  { name: 'academy', title: '学堂', desc: '小白金融学堂 · 从入门到进阶' },
   { name: 'reports', title: '分析报告', desc: '上传 HTML 研报，或用接口交给 AI 写入' },
 ]
 

@@ -7,7 +7,7 @@ const NAV: { id: Screen['name']; label: string }[] = [
   { id: 'party', label: '队伍' },
   { id: 'menu', label: '菜单' },
   { id: 'grass', label: '草地' },
-  { id: 'trainer', label: '训练家' },
+  { id: 'academy', label: '学堂' },
 ]
 
 export function DeviceChrome({ children }: { children: ReactNode }) {
