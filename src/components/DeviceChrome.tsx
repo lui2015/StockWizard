@@ -43,8 +43,10 @@ export function DeviceChrome({ children }: { children: ReactNode }) {
             <span className="lens" />
           </button>
         </header>
-        <div className={`screen ${screen.name === 'title' ? 'screen-title' : ''}`}>
-          {children}
+        <div className="screen-wrap">
+          <div className={`screen ${screen.name === 'title' ? 'screen-title' : ''}`}>
+            {children}
+          </div>
         </div>
         <div className="device-speaker" aria-hidden>
           <span />

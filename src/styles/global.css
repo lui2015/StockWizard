@@ -179,12 +179,22 @@ button {
   border: 3px solid var(--ink);
 }
 
-.screen {
-  background: var(--screen);
+/* 屏幕外框：边框与米色内衬画在外层，滚动内容不会盖住它们 */
+.screen-wrap {
+  display: flex;
+  flex-direction: column;
+  height: min(78dvh, 760px);
+  position: relative;
   border: 5px solid var(--ink);
   box-shadow: inset 0 0 0 6px #cfc6b0;
-  /* 固定高度：切换页面时不再随内容伸缩，消除跳跃感 */
-  height: min(78dvh, 760px);
+  background: var(--screen);
+  padding: 6px;
+}
+
+.screen {
+  flex: 1 1 0;
+  min-height: 0;
+  background: var(--screen);
   overflow: auto;
   position: relative;
 }
@@ -2504,14 +2514,18 @@ button {
     transform-origin: center;
   }
 
-  .screen {
+  .screen-wrap {
     flex: 1 1 0;
     min-height: 0;
-    max-height: none;
     border: 5px solid #0b0b0b;
     box-shadow:
       inset 0 0 0 6px #cfc6b0,
       inset 0 0 0 8px #1a1a1a;
+    background: var(--screen);
+    padding: 8px;
+  }
+
+  .screen {
     padding: 8px;
     overflow: auto;
     overflow-x: hidden;
@@ -3017,11 +3031,10 @@ button {
   display: none;
 }
 
-.device.immersive .screen {
+.device.immersive .screen-wrap {
   flex: 1 1 0;
   min-height: 0;
-  height: auto;
-  max-height: none;
   border: none;
   box-shadow: none;
+  padding: 0;
 }
