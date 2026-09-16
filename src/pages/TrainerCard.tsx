@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { PixelSprite } from '../components/PixelSprite'
 import { useGame } from '../store/gameStore'
 import { bookOf, formatSigned, positionOf } from '../utils/holding'
@@ -7,8 +7,8 @@ import { trainerTitle } from '../utils/stats'
 import { sfx } from '../utils/sound'
 
 export function TrainerCard() {
-  const { save, catalog, quotes, getSprite, rename, setScreen, play, switchSquad } = useGame()
-  const [name, setName] = useState(save.trainerName)
+  const { save, catalog, quotes, getSprite, user, setScreen, play, switchSquad } = useGame()
+  const displayName = user?.username ?? save.trainerName
   const priceOf = (id: string) => {
     try {
       return quotes[id]?.price || getSprite(id).basePrice
@@ -66,17 +66,7 @@ export function TrainerCard() {
         <dl>
           <div>
             <dt>姓名</dt>
-            <dd>
-              <input
-                value={name}
-                maxLength={6}
-                onChange={(e) => setName(e.target.value)}
-                onBlur={() => {
-                  rename(name)
-                  play(sfx.blip)
-                }}
-              />
-            </dd>
+            <dd>{displayName}</dd>
           </div>
           <div>
             <dd>
