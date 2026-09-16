@@ -8,6 +8,60 @@ const SIZE: Record<string, number> = { sm: 4, md: 6, lg: 8, xl: 12 }
 
 const BUILTIN_IDS = new Set(STOCKS.map((s) => s.id))
 
+const SHAPE_KEYS = Object.keys(SHAPES)
+
+/** xorshift 随机数：由 seed 确定性生成，同一股票每次渲染结果一致 */
+function makeRand(seed: number) {
+  let h = (seed || 1) >>> 0
+  return () => {
+    h ^= h << 13
+    h >>>= 0
+    h ^= h >>> 17
+    h ^= h << 5
+    h >>>= 0
+    return h / 0xffffffff
+  }
+}
+
+/**
+ * 在基础造型上做确定性变异：镜像、轮廓凿角、边缘凸起。
+ * 只动轮廓(1)与空位(0)，不碰高光/花纹(2/3/4)，保证表情不变形。
+ */
+function mutateGrid(grid: number[][], seed: number): number[][] {
+  const rand = makeRand(seed)
+  const H = grid.length
+  const at = (g: number[][], x: number, y: number) =>
+    y >= 0 && y < H && x >= 0 && x < g[y].length ? g[y][x] : 0
+  const flipped = rand() > 0.5
+
+  // 第一遍：镜像 + 轮廓凿角
+  let out = grid.map((row, y) =>
+    row.map((cell, x) => {
+      const sx = flipped ? row.length - 1 - x : x
+      const src = row[sx]
+      if (src !== 1) return src
+      const nearEmpty =
+        !at(grid, sx - 1, y) || !at(grid, sx + 1, y) || !at(grid, sx, y - 1) || !at(grid, sx, y + 1)
+      if (nearEmpty && rand() > 0.7) return 0
+      return src
+    }),
+  )
+
+  // 第二遍：边缘凸起
+  out = out.map((row, y) =>
+    row.map((cell, x) => {
+      if (cell !== 0) return cell
+      const nearFill =
+        at(out, x - 1, y) !== 0 ||
+        at(out, x + 1, y) !== 0 ||
+        at(out, x, y - 1) !== 0 ||
+        at(out, x, y + 1) !== 0
+      return nearFill && rand() > 0.84 ? 1 : 0
+    }),
+  )
+  return out
+}
+
 export function PixelSprite({
   stock,
   size = 'md',
@@ -19,7 +73,13 @@ export function PixelSprite({
   silhouette?: boolean
   bounce?: boolean
 }) {
-  const grid = SHAPES[stock.shape] ?? SHAPES.orb
+  // 非内置股票：渲染时按 id 确定性生成变异造型，保证每只独一无二（不依赖存档里的旧数据）
+  const grid = BUILTIN_IDS.has(stock.id)
+    ? (SHAPES[stock.shape] ?? SHAPES.orb)
+    : mutateGrid(
+        SHAPES[SHAPE_KEYS[fnv1a(stock.id + '|base') % SHAPE_KEYS.length]] ?? SHAPES.orb,
+        fnv1a(stock.id + '|mut'),
+      )
   const palette = (SECTOR_META[stock.types?.[0]] ?? SECTOR_META.conglomerate).colors
   const second = stock.types[1] && SECTOR_META[stock.types[1]] ? SECTOR_META[stock.types[1]].colors : palette
   const px = SIZE[size]
