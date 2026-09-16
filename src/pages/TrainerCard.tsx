@@ -79,7 +79,6 @@ export function TrainerCard() {
             </dd>
           </div>
           <div>
-            <dt>ID / 称号</dt>
             <dd>
               No.{save.trainerId} · {title}
             </dd>
