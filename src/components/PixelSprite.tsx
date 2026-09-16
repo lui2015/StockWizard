@@ -1,8 +1,12 @@
 import { SECTOR_META } from '../data/sectors'
+import { STOCKS } from '../data/stocks'
 import { LEAF, SHAPES } from '../data/sprites'
 import type { StockSprite } from '../data/types'
+import { fnv1a } from '../utils/wildStock'
 
 const SIZE: Record<string, number> = { sm: 4, md: 6, lg: 8, xl: 12 }
+
+const BUILTIN_IDS = new Set(STOCKS.map((s) => s.id))
 
 export function PixelSprite({
   stock,
@@ -27,10 +31,19 @@ export function PixelSprite({
 
   const yOff = stock.id === 'aapl' || stock.id === 'moutai' ? 3 : 0
 
+  // 非内置股票按 id 做色相偏移，避免同行业头像完全一样
+  const hue = BUILTIN_IDS.has(stock.id)
+    ? 0
+    : (fnv1a(stock.id) % 71) - 35
+
   return (
     <div
       className={`sprite ${bounce ? 'sprite-bounce' : ''}`}
-      style={{ width: w * px, height: h * px }}
+      style={{
+        width: w * px,
+        height: h * px,
+        filter: hue ? `hue-rotate(${hue}deg)` : undefined,
+      }}
       aria-hidden
     >
       {(stock.id === 'aapl' || stock.id === 'moutai') &&

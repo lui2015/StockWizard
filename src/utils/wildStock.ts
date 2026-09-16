@@ -28,10 +28,20 @@ export function inferTypes(name: string, market: 'CN' | 'HK'): StockSprite['type
   return market === 'HK' ? ['internet'] : ['conglomerate']
 }
 
+/** FNV-1a：比简单求和更分散，避免不同股票撞造型 */
+export function fnv1a(input: string) {
+  let hash = 0x811c9dc5
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193) >>> 0
+  }
+  return hash
+}
+
 export function spriteFromHit(hit: MarketHit, price = 10): StockSprite {
   const builtin = findBuiltin(hit)
   if (builtin) return builtin
-  const seed = [...hit.quoteId].reduce((n, c) => n + c.charCodeAt(0), 0)
+  const seed = fnv1a(`${hit.quoteId}|${hit.name}`)
   const types = inferTypes(hit.name, hit.market)
   return {
     id: hit.id,
