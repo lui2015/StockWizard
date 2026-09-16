@@ -189,6 +189,22 @@ button {
   position: relative;
 }
 
+.field-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.field-row input {
+  width: 100%;
+  border: 3px solid var(--ink);
+  background: #fff;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
 .fin-chart {
   margin-top: 12px;
 }

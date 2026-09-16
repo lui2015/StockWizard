@@ -4,12 +4,24 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
 import { migrateSector } from '../data/sectors'
 import { STOCKS, STOCK_MAP } from '../data/stocks'
 import type { Holding, Quote, SaveData, Screen, StockSprite } from '../data/types'
+import {
+  fetchCloudSave,
+  getToken,
+  login as apiLogin,
+  logout as apiLogout,
+  me as apiMe,
+  putCloudSave,
+  register as apiRegister,
+  setToken,
+  type AuthUser,
+} from '../api/auth'
 import { fetchBatchQuotes, fetchLiveQuote } from '../api/eastmoney'
 import { quoteIdOf } from '../utils/quoteId'
 import { buildInitialQuotes } from '../utils/quotes'
@@ -75,18 +87,21 @@ function sanitizeOwned(save: SaveData): SaveData {
   return { ...save, captured: [...owned], holdings, squads, party: active?.members ?? [] }
 }
 
+function parseSave(stored: Partial<SaveData>): SaveData {
+  const parsed = { ...defaultSave(), ...stored } as SaveData
+  parsed.holdings = parsed.holdings ?? {}
+  parsed.discovered = (parsed.discovered ?? []).map((stock) => ({
+    ...stock,
+    types: stock.types.map(migrateSector) as StockSprite['types'],
+  }))
+  return sanitizeOwned(migrateSquads(parsed, stored))
+}
+
 function loadSave(): SaveData {
   try {
     const raw = localStorage.getItem(SAVE_KEY)
     if (!raw) return defaultSave()
-    const stored = JSON.parse(raw) as Partial<SaveData>
-    const parsed = { ...defaultSave(), ...stored } as SaveData
-    parsed.holdings = parsed.holdings ?? {}
-    parsed.discovered = (parsed.discovered ?? []).map((stock) => ({
-      ...stock,
-      types: stock.types.map(migrateSector) as StockSprite['types'],
-    }))
-    return sanitizeOwned(migrateSquads(parsed, stored))
+    return parseSave(JSON.parse(raw) as Partial<SaveData>)
   } catch {
     return defaultSave()
   }
@@ -98,6 +113,11 @@ interface GameContextValue {
   catalog: StockSprite[]
   screen: Screen
   setScreen: (s: Screen) => void
+  user: AuthUser | null
+  cloudState: 'idle' | 'saving' | 'saved' | 'error'
+  login: (username: string, password: string) => Promise<AuthUser>
+  register: (username: string, password: string) => Promise<AuthUser>
+  logout: () => Promise<void>
   play: (fn: () => void) => void
   getSprite: (id: string) => StockSprite
   registerStock: (stock: StockSprite, quote: Quote) => void
@@ -146,9 +166,87 @@ export function GameProvider({ children }: { children: ReactNode }) {
     save.started ? { name: 'party' } : { name: 'title' },
   )
 
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [cloudState, setCloudState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const syncTimer = useRef<number | undefined>(undefined)
+  const saveRef = useRef(save)
+  saveRef.current = save
+
   useEffect(() => {
     localStorage.setItem(SAVE_KEY, JSON.stringify(save))
   }, [save])
+
+  // 已登录：存档变化后防抖同步到云端
+  useEffect(() => {
+    if (!user) return
+    setCloudState('saving')
+    window.clearTimeout(syncTimer.current)
+    syncTimer.current = window.setTimeout(() => {
+      void putCloudSave(saveRef.current)
+        .then(() => setCloudState('saved'))
+        .catch(() => setCloudState('error'))
+    }, 1000)
+    return () => window.clearTimeout(syncTimer.current)
+  }, [save, user])
+
+  // 启动后恢复登录态，并拉取云端存档
+  useEffect(() => {
+    if (!getToken()) return
+    let alive = true
+    void (async () => {
+      try {
+        const res = await apiMe()
+        if (!alive) return
+        setUser(res.user)
+        const cloud = await fetchCloudSave()
+        if (!alive) return
+        if (cloud.save) setSave(parseSave(cloud.save))
+        else await putCloudSave(saveRef.current)
+        if (alive) setCloudState('saved')
+      } catch {
+        setToken('')
+      }
+    })()
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  const login = useCallback(async (username: string, password: string) => {
+    const res = await apiLogin(username, password)
+    setToken(res.token)
+    setUser(res.user)
+    try {
+      const cloud = await fetchCloudSave()
+      if (cloud.save) setSave(parseSave(cloud.save))
+      else await putCloudSave(saveRef.current)
+      setCloudState('saved')
+    } catch {
+      setCloudState('error')
+    }
+    return res.user
+  }, [])
+
+  const register = useCallback(async (username: string, password: string) => {
+    const res = await apiRegister(username, password)
+    setToken(res.token)
+    setUser(res.user)
+    try {
+      await putCloudSave(saveRef.current)
+      setCloudState('saved')
+    } catch {
+      setCloudState('error')
+    }
+    return res.user
+  }, [])
+
+  const logout = useCallback(async () => {
+    await apiLogout().catch(() => {})
+    window.clearTimeout(syncTimer.current)
+    setToken('')
+    setUser(null)
+    setCloudState('idle')
+  }, [])
 
   const refreshQuote = useCallback(async (id: string) => {
     const stock = catalog.find((s) => s.id === id)
@@ -236,6 +334,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
       quotes,
       catalog,
       screen,
+      user,
+      cloudState,
+      login,
+      register,
+      logout,
       setScreen: (s) => {
         setScreen(s)
         if (s.name !== 'title') {
@@ -408,7 +511,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setScreen({ name: 'title' })
       },
     }),
-    [save, quotes, screen, catalog],
+    [save, quotes, screen, catalog, user, cloudState, login, register, logout],
   )
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>

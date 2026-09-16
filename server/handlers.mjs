@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import crypto from 'node:crypto'
 
 const UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
@@ -38,7 +39,9 @@ const UPSTREAM_HEADERS = {
 }
 
 const REPORT_MAX = 1_500_000
+const SAVE_MAX = 4_000_000
 const ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/
+const NAME_PATTERN = /^[A-Za-z0-9_.-]{3,24}$/
 
 async function fetchUpstream(targets, query) {
   let lastError
@@ -200,14 +203,14 @@ export function createRadarMiddleware() {
   }
 }
 
-function readBody(req) {
+function readBody(req, max = REPORT_MAX) {
   return new Promise((resolve, reject) => {
     const chunks = []
     let size = 0
     req.on('data', (chunk) => {
       const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk))
       size += buf.length
-      if (size > REPORT_MAX) {
+      if (size > max) {
         reject(new Error('报告太大，请控制在 1.5MB 内'))
         return
       }
@@ -350,6 +353,189 @@ export function createReportsMiddleware(reportDir) {
       sendJson(res, 404, { ok: false, error: '接口不存在' })
     } catch (error) {
       sendJson(res, 500, { ok: false, error: error instanceof Error ? error.message : '报告接口失败' })
+    }
+  }
+}
+
+function hashPassword(password, salt) {
+  return crypto.scryptSync(password, salt, 32).toString('hex')
+}
+
+/** 账号体系：注册/登录 + 云端存档 /api/auth/*、/api/save */
+export function createAuthMiddleware(authDir) {
+  const dir = path.resolve(authDir)
+  const usersFile = () => path.join(dir, 'users.json')
+  const savesDir = () => path.join(dir, 'saves')
+  const saveFile = (id) => path.join(savesDir(), `${id}.json`)
+
+  function ensure() {
+    fs.mkdirSync(dir, { recursive: true })
+    fs.mkdirSync(savesDir(), { recursive: true })
+  }
+
+  function readUsers() {
+    ensure()
+    if (!fs.existsSync(usersFile())) return []
+    try {
+      const rows = JSON.parse(fs.readFileSync(usersFile(), 'utf8'))
+      return Array.isArray(rows) ? rows : []
+    } catch {
+      return []
+    }
+  }
+
+  function writeUsers(rows) {
+    ensure()
+    fs.writeFileSync(usersFile(), JSON.stringify(rows, null, 2))
+  }
+
+  function publicUser(row) {
+    return { id: row.id, username: row.username, createdAt: row.createdAt }
+  }
+
+  function bearer(req) {
+    const raw = String(req.headers?.authorization ?? '')
+    return raw.startsWith('Bearer ') ? raw.slice(7).trim() : ''
+  }
+
+  function userByToken(req) {
+    const token = bearer(req)
+    if (!token) return null
+    return readUsers().find((row) => row.token === token) ?? null
+  }
+
+  return async function authMiddleware(req, res, next) {
+    const url = req.url?.split('?')[0] ?? ''
+    if (!url.startsWith('/api/auth') && url !== '/api/save') {
+      next()
+      return
+    }
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 204
+      res.end()
+      return
+    }
+
+    try {
+      if (req.method === 'POST' && (url === '/api/auth/register' || url === '/api/auth/login')) {
+        const raw = await readBody(req)
+        let username = ''
+        let password = ''
+        try {
+          const body = JSON.parse(raw)
+          username = String(body.username ?? '').trim()
+          password = String(body.password ?? '')
+        } catch {
+          sendJson(res, 400, { ok: false, error: '请求格式不对' })
+          return
+        }
+        if (!NAME_PATTERN.test(username)) {
+          sendJson(res, 400, { ok: false, error: '用户名需 3-24 位，可用字母、数字、_ . -' })
+          return
+        }
+        if (password.length < 6 || password.length > 64) {
+          sendJson(res, 400, { ok: false, error: '密码需 6-64 位' })
+          return
+        }
+
+        const users = readUsers()
+        if (url === '/api/auth/register') {
+          if (users.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
+            sendJson(res, 409, { ok: false, error: '这个用户名已经被用了' })
+            return
+          }
+          const salt = crypto.randomBytes(16).toString('hex')
+          const row = {
+            id: `u-${Date.now().toString(36)}-${crypto.randomBytes(3).toString('hex')}`,
+            username,
+            salt,
+            hash: hashPassword(password, salt),
+            token: crypto.randomBytes(24).toString('hex'),
+            createdAt: Date.now(),
+          }
+          users.push(row)
+          writeUsers(users)
+          sendJson(res, 200, { ok: true, token: row.token, user: publicUser(row) })
+          return
+        }
+
+        const row = users.find((u) => u.username.toLowerCase() === username.toLowerCase())
+        if (!row || row.hash !== hashPassword(password, row.salt)) {
+          sendJson(res, 401, { ok: false, error: '用户名或密码不对' })
+          return
+        }
+        row.token = crypto.randomBytes(24).toString('hex')
+        writeUsers(users)
+        sendJson(res, 200, { ok: true, token: row.token, user: publicUser(row) })
+        return
+      }
+
+      if (req.method === 'GET' && url === '/api/auth/me') {
+        const row = userByToken(req)
+        if (!row) {
+          sendJson(res, 401, { ok: false, error: '未登录' })
+          return
+        }
+        sendJson(res, 200, { ok: true, user: publicUser(row) })
+        return
+      }
+
+      if (req.method === 'POST' && url === '/api/auth/logout') {
+        const token = bearer(req)
+        const users = readUsers()
+        const row = users.find((u) => u.token === token)
+        if (row) {
+          row.token = ''
+          writeUsers(users)
+        }
+        sendJson(res, 200, { ok: true })
+        return
+      }
+
+      if (url === '/api/save') {
+        const row = userByToken(req)
+        if (!row) {
+          sendJson(res, 401, { ok: false, error: '未登录' })
+          return
+        }
+        if (req.method === 'GET') {
+          ensure()
+          if (!fs.existsSync(saveFile(row.id))) {
+            sendJson(res, 200, { ok: true, save: null })
+            return
+          }
+          try {
+            sendJson(res, 200, { ok: true, save: JSON.parse(fs.readFileSync(saveFile(row.id), 'utf8')) })
+          } catch {
+            sendJson(res, 200, { ok: true, save: null })
+          }
+          return
+        }
+        if (req.method === 'PUT') {
+          const raw = await readBody(req, SAVE_MAX)
+          const body = JSON.parse(raw)
+          if (!body || typeof body !== 'object' || !body.save || typeof body.save !== 'object') {
+            sendJson(res, 400, { ok: false, error: '存档格式不对' })
+            return
+          }
+          ensure()
+          fs.writeFileSync(saveFile(row.id), JSON.stringify(body.save))
+          sendJson(res, 200, { ok: true, updatedAt: Date.now() })
+          return
+        }
+        if (req.method === 'DELETE') {
+          if (fs.existsSync(saveFile(row.id))) fs.unlinkSync(saveFile(row.id))
+          sendJson(res, 200, { ok: true })
+          return
+        }
+      }
+
+      sendJson(res, 404, { ok: false, error: '接口不存在' })
+    } catch (error) {
+      sendJson(res, 500, { ok: false, error: error instanceof Error ? error.message : '账号服务出错' })
     }
   }
 }

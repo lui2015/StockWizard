@@ -10,6 +10,7 @@ const ITEMS: { name: Screen['name']; title: string; desc: string }[] = [
   { name: 'academy', title: '学堂', desc: '小白金融学堂 · 从入门到进阶' },
   { name: 'quotes', title: '训练家名言', desc: '投资大师的智慧与警句' },
   { name: 'reports', title: '分析报告', desc: '上传 HTML 研报，或用接口交给 AI 写入' },
+  { name: 'account', title: '账号', desc: '注册登录，云同步队伍与持仓' },
 ]
 
 export function MainMenu() {

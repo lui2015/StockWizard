@@ -13,6 +13,7 @@ import { ReportView } from './pages/ReportView'
 import { TrainerCard } from './pages/TrainerCard'
 import { AcademyView } from './pages/AcademyView'
 import { QuotesView } from './pages/QuotesView'
+import { AccountView } from './pages/AccountView'
 
 export function App() {
   const { screen, setScreen } = useGame()
@@ -45,6 +46,9 @@ export function App() {
       break
     case 'quotes':
       view = <QuotesView />
+      break
+    case 'account':
+      view = <AccountView />
       break
     case 'reports':
       view = <Reports />

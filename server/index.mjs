@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import express from 'express'
-import { createRadarMiddleware, createReportsMiddleware } from './handlers.mjs'
+import { createAuthMiddleware, createRadarMiddleware, createReportsMiddleware } from './handlers.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..')
@@ -29,6 +29,7 @@ app.get(sub('/healthz'), (_req, res) => {
 })
 
 app.use(BASE, createRadarMiddleware())
+app.use(BASE, createAuthMiddleware(path.join(DATA_DIR, 'auth')))
 app.use(BASE, createReportsMiddleware(path.join(DATA_DIR, 'reports')))
 
 app.use(
