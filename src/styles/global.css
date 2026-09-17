@@ -149,6 +149,42 @@ button {
     1px 1px 0 #ff6b7a;
 }
 
+/* 扬声器扫描光点：从左至右循环移动 */
+.device-speaker {
+  position: relative;
+  overflow: hidden;
+}
+
+.speaker-dot {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--yellow);
+  box-shadow: 0 0 5px 1px rgba(255, 214, 64, 0.85);
+  transform: translateY(-50%);
+  animation: speaker-scan 3.2s linear infinite;
+}
+
+@keyframes speaker-scan {
+  0% {
+    left: 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
 .device-top {
   display: flex;
   align-items: center;
