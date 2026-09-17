@@ -893,95 +893,62 @@ button {
   border: 4px solid var(--ink);
 }
 
-/* 图鉴顶部轮播：肖像 / 基本信息 / 分析档案 */
-.portrait-carousel {
-  position: relative;
-}
-
-.carousel-viewport {
+/* 图鉴肖像：精灵 ↔ 公司简介 消散切换 */
+.portrait-intro {
   overflow: hidden;
-  border: 4px solid var(--ink);
-  background: #fffdf6;
-  touch-action: pan-y;
 }
 
-.carousel-track {
-  display: flex;
-  align-items: stretch;
+.pi-layer {
+  grid-area: 1 / 1;
+  width: 100%;
+  padding: 10px 14px;
 }
 
-.carousel-slide {
-  flex: 0 0 100%;
-  min-width: 100%;
-  min-height: 180px;
-}
-
-.carousel-slide.slide-card {
-  background:
-    repeating-linear-gradient(#e8e0cc 0 8px, #ddd4bc 8px 16px);
-  padding: 12px;
+.pi-sprite {
   display: grid;
-  align-content: center;
-  gap: 8px;
+  place-items: center;
 }
 
-.slide-tag {
-  justify-self: start;
-  background: var(--red);
-  color: #fff;
-  font-size: 11px;
-  padding: 2px 8px;
-  border: 2px solid var(--ink);
-}
-
-.slide-list {
-  list-style: none;
-  display: grid;
-  gap: 4px;
-}
-
-.slide-list li {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
+.pi-text {
+  align-self: center;
   font-size: 13px;
-  border-bottom: 2px dashed #cfc6b0;
-  padding: 3px 0;
+  line-height: 1.8;
+  text-align: justify;
+  text-shadow: 0 1px 0 #fff;
 }
 
-.slide-list li span {
-  opacity: 0.65;
+.pi-layer.pi-hide {
+  animation: pi-dissolve-out 0.8s steps(8, end) both;
 }
 
-.slide-text {
-  font-size: 13px;
-  line-height: 1.7;
-  background: #fff;
-  border: 3px solid var(--ink);
-  padding: 8px 10px;
+.pi-layer.pi-show {
+  animation: pi-dissolve-in 0.8s steps(8, start) both;
 }
 
-.carousel-dots {
-  position: absolute;
-  bottom: 8px;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  z-index: 5;
+@keyframes pi-dissolve-out {
+  0% {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.86);
+    filter: blur(1.5px);
+  }
 }
 
-.carousel-dots i {
-  width: 10px;
-  height: 10px;
-  border: 2px solid var(--ink);
-  background: #fff;
-  cursor: pointer;
-}
-
-.carousel-dots i.on {
-  background: var(--red);
+@keyframes pi-dissolve-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.12);
+    filter: blur(1.5px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
 }
 
 .code-line {
