@@ -140,6 +140,8 @@ button {
 }
 
 .device-speaker span {
+  position: relative;
+  overflow: hidden;
   width: 22px;
   height: 6px;
   background: linear-gradient(#2a050c, #140206);
@@ -149,39 +151,43 @@ button {
     1px 1px 0 #ff6b7a;
 }
 
-/* 扬声器扫描光点：从左至右循环移动 */
-.device-speaker {
-  position: relative;
-  overflow: hidden;
-}
-
-.speaker-dot {
+/* 扬声器孔内亮光从左至右扫过，光依次流过每个孔 */
+.device-speaker span::after {
+  content: '';
   position: absolute;
-  top: 50%;
-  left: 0;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--yellow);
-  box-shadow: 0 0 5px 1px rgba(255, 214, 64, 0.85);
-  transform: translateY(-50%);
-  animation: speaker-scan 3.2s linear infinite;
+  top: 0;
+  left: -70%;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 214, 64, 0.95), transparent);
+  animation: hole-scan 3.6s linear infinite;
 }
 
-@keyframes speaker-scan {
+.device-speaker span:nth-child(1)::after {
+  animation-delay: 0s;
+}
+.device-speaker span:nth-child(2)::after {
+  animation-delay: 0.6s;
+}
+.device-speaker span:nth-child(3)::after {
+  animation-delay: 1.2s;
+}
+.device-speaker span:nth-child(4)::after {
+  animation-delay: 1.8s;
+}
+.device-speaker span:nth-child(5)::after {
+  animation-delay: 2.4s;
+}
+.device-speaker span:nth-child(6)::after {
+  animation-delay: 3s;
+}
+
+@keyframes hole-scan {
   0% {
-    left: 0;
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
+    left: -70%;
   }
   100% {
-    left: 100%;
-    opacity: 0;
+    left: 115%;
   }
 }
 

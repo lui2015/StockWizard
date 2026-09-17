@@ -55,7 +55,6 @@ export function DeviceChrome({ children }: { children: ReactNode }) {
           <span />
           <span />
           <span />
-          <i className="speaker-dot" />
         </div>
         {!hideNav ? (
           <nav className="device-nav">
