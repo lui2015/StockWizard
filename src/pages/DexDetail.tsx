@@ -1,5 +1,4 @@
-import { DialogBox } from '../components/DialogBox'
-import { PixelSprite } from '../components/PixelSprite'
+import { PortraitCarousel } from '../components/PortraitCarousel'
 import { PriceChart } from '../components/PriceChart'
 import { ProfitChart } from '../components/ProfitChart'
 import { HoldingPanel } from '../components/HoldingPanel'
@@ -9,7 +8,7 @@ import { useEffect, useState } from 'react'
 import { fetchChart } from '../api/chart'
 import { useGame } from '../store/gameStore'
 import { moveLog } from '../utils/moves'
-import { listingOf, quoteIdOf } from '../utils/quoteId'
+import { quoteIdOf } from '../utils/quoteId'
 import { changePct, dayRange, formatPrice, formatTime, percentileNote, pricePercentile } from '../utils/quotes'
 import { levelOf, rarityLabel } from '../utils/stats'
 import { sfx } from '../utils/sound'
@@ -92,10 +91,7 @@ export function DexDetail({ id, tab = 'dex' }: { id: string; tab?: 'dex' | 'obse
 
       {tab === 'dex' ? (
         <section className="detail-body">
-          <div className="portrait">
-            <PixelSprite stock={stock} size="xl" silhouette={!seen} bounce={seen} />
-            {caught ? <i className="ball caught big" /> : null}
-          </div>
+          <PortraitCarousel stock={stock} seen={seen} caught={caught} />
           {seen ? (
             <>
               <p className="code-line">
@@ -107,17 +103,6 @@ export function DexDetail({ id, tab = 'dex' }: { id: string; tab?: 'dex' | 'obse
                 ))}
                 <span className="level-tag">Lv.{levelOf(stock, quote)}</span>
               </div>
-              <p className="meta">
-                行业 {stock.category}
-                <br />
-                上市 {listingOf(stock)} · {stock.heightLabel}
-                <br />
-                业务 {stock.weightLabel}
-              </p>
-              <DialogBox speaker="公司档案" text={stock.dexText} />
-              <p className="ability">
-                观察要点「{stock.ability}」：{stock.abilityDesc}
-              </p>
               <div className="actions">
                 {caught ? (
                   <button
