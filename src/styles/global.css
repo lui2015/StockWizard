@@ -403,14 +403,21 @@ button {
 
 .tape-metrics {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
-@media (max-width: 480px) {
-  .tape-metrics {
-    grid-template-columns: 1fr;
-  }
+/* 大盘详情指标：不截断文字，放不下时换行 */
+.tape-metrics .metric-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.tape-metrics .metric-grid span,
+.tape-metrics .metric-grid b {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  word-break: break-word;
 }
 
 .tape-row strong {
