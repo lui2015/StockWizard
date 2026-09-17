@@ -43,7 +43,10 @@ app.use(
 )
 
 app.get(BASE, (_req, res) => res.redirect(302, sub('/')))
-app.get(sub('/*'), (_req, res) => res.sendFile(path.join(DIST, 'index.html')))
+app.get(sub('/*'), (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache')
+  res.sendFile(path.join(DIST, 'index.html'))
+})
 
 app.listen(PORT, HOST, () => {
   console.log(`[stock-wizard] listening on http://${HOST}:${PORT}${sub('/')} (data: ${DATA_DIR})`)
