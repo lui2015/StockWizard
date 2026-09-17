@@ -66,7 +66,7 @@ const FLAVOR = [
 ]
 
 export function Grassland() {
-  const { save, quotes, catalog, setScreen, play, markSeen, tryCatch, registerStock, refreshQuote } = useGame()
+  const { save, quotes, catalog, screen, setScreen, play, markSeen, tryCatch, registerStock, refreshQuote } = useGame()
   const [hits, setHits] = useState(0)
   const [hot, setHot] = useState<number | null>(null)
   const [rustle, setRustle] = useState<number | null>(null)
@@ -88,6 +88,12 @@ export function Grassland() {
   const [weather, setWeather] = useState<Weather>(null)
 
   phaseRef.current = phase
+
+  // 底部导航点「草地」时收起雷达 / 大盘面板（screen 引用变化即视为一次导航）
+  useEffect(() => {
+    setTape(false)
+    setRadar(false)
+  }, [screen])
 
   // 天气：A股/港股/美股代表指数全跌 → 下雨，全涨 → 阳光，其余维持原样
   useEffect(() => {
@@ -362,7 +368,7 @@ export function Grassland() {
   if (tape) {
     return (
       <div className="panel grass-panel">
-        <MarketTape onClose={() => setTape(false)} />
+        <MarketTape />
       </div>
     )
   }

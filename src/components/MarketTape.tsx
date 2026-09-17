@@ -11,12 +11,11 @@ const GROUPS: { id: TapeGroup; label: string }[] = [
   { id: 'US', label: '美股' },
 ]
 
-export function MarketTape({ onClose }: { onClose: () => void }) {
+export function MarketTape() {
   const [rows, setRows] = useState<TapeIndex[]>([])
   const [closes, setCloses] = useState<Record<string, number[]>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [tick, setTick] = useState(0)
   const [detail, setDetail] = useState<TapeIndex | null>(null)
 
   useEffect(() => {
@@ -35,7 +34,6 @@ export function MarketTape({ onClose }: { onClose: () => void }) {
     }
     void pull()
     const t = window.setInterval(() => {
-      setTick((n) => n + 1)
       void pull()
     }, 12000)
     return () => {
@@ -65,15 +63,6 @@ export function MarketTape({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="radar tape">
-      <header className="panel-head row">
-        <div>
-          <h2>大盘行情</h2>
-          <p>当前点数高于近两年多少交易日{tick > 0 ? ' · 自动刷新' : ''}</p>
-        </div>
-        <button className="tiny" onClick={onClose}>
-          关闭
-        </button>
-      </header>
       {error ? <p className="empty">{error}</p> : null}
       {loading && !rows.length ? <p className="empty">正在读取各大市场天气……</p> : null}
       {detail ? (
