@@ -53,9 +53,6 @@ export function TrainerCard() {
     <div className="panel trainer-panel">
       <header className="panel-head row">
         <h2>训练家证</h2>
-        <button className="tiny" onClick={() => setScreen({ name: 'menu' })}>
-          返回
-        </button>
       </header>
 
       <div className="id-card slim">

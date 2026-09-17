@@ -3,7 +3,7 @@ import { useGame } from '../store/gameStore'
 import { sfx } from '../utils/sound'
 
 export function AccountView() {
-  const { user, cloudState, login, register, logout, setScreen, play } = useGame()
+  const { user, cloudState, login, register, logout, play } = useGame()
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -45,9 +45,6 @@ export function AccountView() {
           <h2>账号</h2>
           <p>{user ? '已开启云同步' : '登录后可跨设备同步队伍与持仓'}</p>
         </div>
-        <button className="tiny" onClick={() => setScreen({ name: 'menu' })}>
-          返回
-        </button>
       </header>
 
       {user ? (

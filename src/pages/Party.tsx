@@ -106,9 +106,6 @@ export function Party() {
           >
             {editing ? '完成' : '编辑'}
           </button>
-          <button className="tiny" onClick={() => setScreen({ name: 'menu' })}>
-            返回
-          </button>
         </div>
       </header>
 

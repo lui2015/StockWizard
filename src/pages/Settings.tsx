@@ -17,9 +17,6 @@ export function Settings() {
     <div className="panel settings-panel">
       <header className="panel-head row">
         <h2>说明书</h2>
-        <button className="tiny" onClick={() => setScreen({ name: 'menu' })}>
-          返回
-        </button>
       </header>
 
       <section className="manual">

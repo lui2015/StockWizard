@@ -32,9 +32,6 @@ export function Pokedex() {
             遇见 {save.seen.length}/{catalog.length} · 捕捉 {save.captured.length}/{catalog.length}
           </p>
         </div>
-        <button className="tiny" onClick={() => setScreen({ name: 'menu' })}>
-          返回
-        </button>
       </header>
 
       <div className="dex-tools">

@@ -68,9 +68,6 @@ export function Reports() {
           <h2>分析报告</h2>
           <p>{rows.length} 份 · HTML · 本机保存</p>
         </div>
-        <button className="tiny" onClick={() => setScreen({ name: 'menu' })}>
-          返回
-        </button>
       </header>
 
       <div className="actions">
