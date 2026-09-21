@@ -39,6 +39,212 @@ const UPSTREAM_HEADERS = {
   Referer: 'https://quote.eastmoney.com/',
 }
 
+// ===== 腾讯行情适配层 =====
+// 东财 push2 系列行情接口在本机被 WAF 封禁（API 路径连接被秒断），
+// 改用腾讯行情（qt.gtimg.cn / web.ifzq.gtimg.cn）作为主数据源，
+// 并把响应转换成东财字段格式（f43/f58/f116...），前端无需任何改动。
+
+const TX_HEADERS = { 'User-Agent': UA, Referer: 'https://gu.qq.com/' }
+
+/** 东财 secid（1.600519 / 116.00700 / 105.AAPL / 100.HSI）→ 腾讯行情代码 */
+function txCodeOf(secid) {
+  const dot = String(secid ?? '').indexOf('.')
+  const mkt = dot >= 0 ? String(secid).slice(0, dot) : ''
+  const code = dot >= 0 ? String(secid).slice(dot + 1) : ''
+  if (!code) return ''
+  if (mkt === '1') return `sh${code}`
+  if (mkt === '0') return `sz${code}`
+  if (mkt === '90') return `bj${code}`
+  if (mkt === '116' || mkt === '128') return `hk${code.replace(/\.HK$/i, '').padStart(5, '0')}`
+  if (mkt === '105' || mkt === '106' || mkt === '107') return `us${code}`
+  if (mkt === '100' || mkt === '124') return `hk${code}`
+  return ''
+}
+
+function txNum(f, i) {
+  const n = Number(f?.[i])
+  return Number.isFinite(n) ? n : 0
+}
+
+function parseTxPayload(text) {
+  const map = new Map()
+  for (const m of text.matchAll(/v_([A-Za-z0-9_.]+)="([^"]*)"/g)) {
+    map.set(m[1], m[2].split('~'))
+  }
+  return map
+}
+
+/**
+ * 腾讯 qt 行字段 → 东财 ulist 行（f2 价格 / f3 涨跌% / f14 名称 / f116 市值...）
+ * 腾讯字段（~ 分隔）：3 现价 4 昨收 5 今开 31 涨跌 32 涨跌% 33 高 34 低
+ * 36 成交量 37 成交额 38 换手 39 PE(TTM) 43 振幅 44 流通市值(亿) 45 总市值(亿) 46/47 PB
+ * A股专属：49 量比 52 PE动 53 PE静 64 股息率
+ */
+function txToEmRow(secid, f) {
+  if (!Array.isArray(f) || f.length < 47) return null
+  const price = txNum(f, 3)
+  if (!(price > 0)) return null
+  const dot = String(secid).indexOf('.')
+  const mkt = String(secid).slice(0, dot)
+  const rawCode = String(secid).slice(dot + 1)
+  const txCode = txCodeOf(secid)
+  const kind = /^us/.test(txCode) ? 'us' : /^hk/.test(txCode) ? 'hk' : 'cn'
+  const isA = kind === 'cn'
+  const isIndex = f.includes('ZS')
+
+  const amountRaw = txNum(f, 37)
+  // A股与港股指数的成交额单位是万元，其余是元
+  const amount = isA || (kind === 'hk' && isIndex) ? amountRaw * 1e4 : amountRaw
+  const capYi = txNum(f, 45)
+  const floatYi = txNum(f, 44)
+  const marketCap = !isIndex && capYi > 0 ? capYi * 1e8 : undefined
+  const floatCap = !isIndex && floatYi > 0 ? floatYi * 1e8 : undefined
+  const dividend = isA && txNum(f, 64) > 0 ? txNum(f, 64) : '-'
+  const pb = isA ? txNum(f, 46) : kind === 'hk' ? txNum(f, 47) : '-'
+
+  return {
+    f12: rawCode,
+    f13: mkt,
+    f14: f[1] ?? '',
+    f2: price,
+    f3: txNum(f, 32),
+    f4: txNum(f, 31),
+    f5: txNum(f, 36),
+    f6: amount,
+    f7: txNum(f, 43),
+    f8: txNum(f, 38),
+    f9: isA ? txNum(f, 52) : '-',
+    f10: isA ? txNum(f, 49) : '-',
+    f15: txNum(f, 33),
+    f16: txNum(f, 34),
+    f17: txNum(f, 5),
+    f18: txNum(f, 4),
+    f20: marketCap,
+    f21: floatCap,
+    f23: pb,
+    f84: !isIndex && marketCap ? Math.round(marketCap / price) : '-',
+    f133: dividend,
+    f164: txNum(f, 39),
+    f188: '-',
+    f197: dividend,
+  }
+}
+
+function emQuoteDataFromRow(row) {
+  return {
+    f43: row.f2,
+    f44: row.f15,
+    f45: row.f16,
+    f46: row.f17,
+    f47: row.f5,
+    f48: row.f6,
+    f50: row.f10,
+    f57: row.f12,
+    f58: row.f14,
+    f60: row.f18,
+    f84: row.f84,
+    f116: row.f20,
+    f117: row.f21,
+    f127: '-',
+    f162: row.f9,
+    f163: '-',
+    f164: row.f164,
+    f167: row.f23,
+    f168: row.f8,
+    f169: row.f4,
+    f170: row.f3,
+    f171: row.f7,
+    f173: '-',
+    f183: '-',
+    f186: '-',
+    f187: '-',
+    f197: row.f197,
+  }
+}
+
+async function fetchTxQuotes(txList) {
+  const res = await fetch(`https://qt.gtimg.cn/q=${encodeURIComponent(txList.join(','))}`, {
+    headers: TX_HEADERS,
+    signal: AbortSignal.timeout(8000),
+  })
+  if (!res.ok) throw new Error(`qt.gtimg.cn ${res.status}`)
+  return parseTxPayload(new TextDecoder('gbk').decode(await res.arrayBuffer()))
+}
+
+function lookupTx(map, code) {
+  return map.get(code) ?? map.get(code.replace(/\..*$/, ''))
+}
+
+/** 批量行情 → 东财 ulist 格式 */
+async function tencentUlist(secids) {
+  const ids = String(secids ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const txList = ids.map(txCodeOf).filter(Boolean)
+  if (!txList.length) return { data: { diff: [] } }
+  const map = await fetchTxQuotes(txList)
+  const rows = []
+  for (const secid of ids) {
+    const f = lookupTx(map, txCodeOf(secid))
+    if (!f) continue
+    const row = txToEmRow(secid, f)
+    if (row) rows.push(row)
+  }
+  return { data: { diff: rows } }
+}
+
+/** 分时 → 东财 trends2 格式（"date hh:mm,price,avg,vol,..."） */
+async function tencentTrends(secid) {
+  const code = txCodeOf(secid)
+  if (!code) throw new Error('bad secid')
+  const res = await fetch(
+    `https://web.ifzq.gtimg.cn/appstock/app/minute/query?code=${encodeURIComponent(code)}`,
+    { headers: TX_HEADERS, signal: AbortSignal.timeout(8000) },
+  )
+  if (!res.ok) throw new Error(`minute/query ${res.status}`)
+  const json = await res.json()
+  const pack = json?.data?.[code]
+  const lines = pack?.data?.data ?? []
+  const dateRaw = String(pack?.data?.date ?? '')
+  const date = dateRaw.length === 8
+    ? `${dateRaw.slice(0, 4)}-${dateRaw.slice(4, 6)}-${dateRaw.slice(6, 8)}`
+    : ''
+  const prevClose = txNum(pack?.qt?.[code], 4)
+  const trends = []
+  for (const line of lines) {
+    const p = String(line).trim().split(/\s+/)
+    const hm = p[0] ?? ''
+    const price = Number(p[1])
+    if (hm.length < 4 || !(price > 0)) continue
+    const time = date ? `${date} ${hm.slice(0, 2)}:${hm.slice(2, 4)}` : hm
+    trends.push(`${time},${price},${price},0,0`)
+  }
+  return { data: { trends, preClose: prevClose } }
+}
+
+/** 日 K → 东财 klines 格式（"date,open,close,high,low,vol"） */
+async function tencentKline(secid, askedLmt) {
+  const code = txCodeOf(secid)
+  if (!code) throw new Error('bad secid')
+  const n = Math.min(120, Math.max(5, Number.isFinite(askedLmt) ? askedLmt : 20))
+  const host = code.startsWith('us')
+    ? 'https://web.ifzq.gtimg.cn/appstock/app/usfqkline/get'
+    : 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get'
+  const res = await fetch(
+    `${host}?param=${encodeURIComponent(`${code},day,,,${n},qfq`)}`,
+    { headers: TX_HEADERS, signal: AbortSignal.timeout(8000) },
+  )
+  if (!res.ok) throw new Error(`fqkline ${res.status}`)
+  const json = await res.json()
+  const pack = json?.data?.[code] ?? {}
+  const rows = pack.qfqday ?? pack.day ?? []
+  const klines = rows
+    .filter((r) => Array.isArray(r) && r.length >= 5)
+    .map((r) => `${r[0]},${r[1]},${r[2]},${r[3]},${r[4]},${Number(r[5]) || 0}`)
+  return { data: { klines } }
+}
+
 const REPORT_MAX = 1_500_000
 const SAVE_MAX = 4_000_000
 const ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/
@@ -183,6 +389,43 @@ export function createRadarMiddleware() {
       return
     }
 
+    // 东财 push2 行情在本机被封禁：quote/ulist/trends/kline 优先走腾讯适配层，
+    // 腾讯不可用时再回落到东财透传
+    if (
+      req.method === 'GET' &&
+      (url === '/radar/quote' ||
+        url === '/radar/ulist' ||
+        url === '/radar/trends' ||
+        url === '/radar/kline')
+    ) {
+      const query = new URLSearchParams(
+        req.url?.includes('?') ? req.url.slice(req.url.indexOf('?') + 1) : '',
+      )
+      try {
+        let payload = null
+        if (url === '/radar/quote') {
+          const list = await tencentUlist(query.get('secid') ?? '')
+          const row = list.data.diff[0]
+          payload = row ? { data: emQuoteDataFromRow(row) } : null
+        } else if (url === '/radar/ulist') {
+          payload = await tencentUlist(query.get('secids') ?? '')
+        } else if (url === '/radar/trends') {
+          payload = await tencentTrends(query.get('secid') ?? '')
+        } else {
+          payload = await tencentKline(query.get('secid') ?? '', Number(query.get('lmt')))
+        }
+        if (payload) {
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'application/json; charset=utf-8')
+          res.setHeader('Cache-Control', 'public, max-age=10')
+          res.end(JSON.stringify(payload))
+          return
+        }
+      } catch {
+        // 腾讯失败，继续走下面的东财透传
+      }
+    }
+
     const targets = ROUTES[url]
     if (!targets || req.method !== 'GET') {
       next()
@@ -197,6 +440,13 @@ export function createRadarMiddleware() {
       res.setHeader('Cache-Control', 'public, max-age=10')
       res.end(body)
     } catch (error) {
+      if (url === '/radar/clist') {
+        // 榜单源不可用时返回空列表兜底，避免雷达/筛选页直接报错
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json; charset=utf-8')
+        res.end(JSON.stringify({ data: { diff: [] } }))
+        return
+      }
       res.statusCode = 502
       res.setHeader('Content-Type', 'application/json; charset=utf-8')
       res.end(JSON.stringify({ error: 'radar upstream failed', detail: String(error) }))
