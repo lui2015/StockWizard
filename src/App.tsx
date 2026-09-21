@@ -13,6 +13,7 @@ import { ReportView } from './pages/ReportView'
 import { TrainerCard } from './pages/TrainerCard'
 import { AcademyView } from './pages/AcademyView'
 import { QuotesView } from './pages/QuotesView'
+import { DecisionView } from './pages/DecisionView'
 import { AccountView } from './pages/AccountView'
 
 export function App() {
@@ -46,6 +47,9 @@ export function App() {
       break
     case 'quotes':
       view = <QuotesView />
+      break
+    case 'decision':
+      view = <DecisionView />
       break
     case 'account':
       view = <AccountView />

@@ -24,6 +24,7 @@ export type Screen =
   | { name: 'trainer' }
   | { name: 'academy' }
   | { name: 'quotes' }
+  | { name: 'decision' }
   | { name: 'account' }
   | { name: 'reports' }
   | { name: 'report'; id: string }
