@@ -893,9 +893,15 @@ button {
   border: 4px solid var(--ink);
 }
 
-/* 图鉴肖像：精灵 ↔ 公司简介 消散切换 */
+/* 图鉴肖像：精灵 ↔ 多页公司简介 消散切换（点击翻页） */
 .portrait-intro {
   overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.portrait-intro:active {
+  filter: brightness(0.96);
 }
 
 .pi-layer {
@@ -915,6 +921,37 @@ button {
   line-height: 1.8;
   text-align: justify;
   text-shadow: 0 1px 0 #fff;
+}
+
+.pi-hint {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 5;
+  font-size: 10px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.pi-dots {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  z-index: 5;
+  display: flex;
+  gap: 5px;
+  pointer-events: none;
+}
+
+.pi-dots i {
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border: 2px solid var(--ink);
+}
+
+.pi-dots i.on {
+  background: var(--red);
 }
 
 .pi-layer.pi-hide {

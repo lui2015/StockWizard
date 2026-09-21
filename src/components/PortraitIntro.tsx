@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PixelSprite } from './PixelSprite'
 import type { Quote, StockSprite } from '../data/types'
 import { api } from '../api/base'
-import { formatMoney } from '../utils/quotes'
+import { changePct, dayRange, formatMoney, formatPercent, formatPrice, formatRatio } from '../utils/quotes'
 import { quoteIdOf } from '../utils/quoteId'
 
 /**
- * 图鉴肖像：精灵展示 ↔ 公司简介文字 定时切换。
- * 切换时精灵以像素化方式「消散」，浮现一段公司介绍
- * （成立时间、高管、总市值、总股本、主营业务等），随后再消散还原成精灵。
+ * 图鉴肖像：精灵展示 ↔ 多页公司信息 定时/点击切换。
+ * 页 0 为精灵；页 1 公司简介（成立/上市/主营/高管/市值/股本），
+ * 页 2 行情快照（价格/涨跌/成交/市值），页 3 估值与盈利。
+ * 点击肖像切换下一页，切换时以像素化方式「消散」过渡。
  */
 
 type F10Row = Record<string, unknown>
@@ -99,25 +100,64 @@ async function fetchCompanyInfo(stock: StockSprite): Promise<CompanyInfo> {
   return info
 }
 
-function buildIntro(stock: StockSprite, info: CompanyInfo | null, quote: Quote): string {
-  const name = stock.name
+/** 页 1：公司简介 */
+function pageIntro(stock: StockSprite, info: CompanyInfo | null, quote: Quote): string {
   const segs: string[] = []
 
   const found = info?.foundDate ? `成立于${fmtFoundDate(info.foundDate)}` : ''
   const listing = `于${stock.market === 'US' ? '美股' : stock.market === 'HK' ? '港交所' : 'A股'}上市`
-  segs.push([name, found, listing].filter(Boolean).join('') + '。')
+  segs.push([stock.name, found, listing].filter(Boolean).join('') + '。')
 
-  const biz =
-    info?.mainBusiness
-      ? info.mainBusiness.replace(/\s+/g, '').slice(0, 60)
-      : `主营${stock.weightLabel}`
-  segs.push(`主营业务：${biz}${info?.mainBusiness && info.mainBusiness.replace(/\s+/g, '').length > 60 ? '等' : ''}。`)
+  const bizRaw = info?.mainBusiness ? info.mainBusiness.replace(/\s+/g, '') : ''
+  segs.push(`主营业务：${bizRaw ? bizRaw.slice(0, 60) + (bizRaw.length > 60 ? '等' : '') : `主营${stock.weightLabel}`}。`)
 
   if (info?.chairman) segs.push(`现任${info.chairman}。`)
   if (quote.marketCap && quote.marketCap > 0) segs.push(`当前总市值${formatMoney(quote.marketCap)}。`)
   if (info?.totalShares && info.totalShares > 0) segs.push(`总股本约${fmtShares(info.totalShares)}。`)
 
   return segs.join('')
+}
+
+/** 页 2：行情快照 */
+function pageQuote(stock: StockSprite, quote: Quote): string {
+  const segs: string[] = []
+  const pct = changePct(quote)
+  const range = dayRange(quote)
+
+  segs.push(`今日${stock.name}报${formatPrice(quote.price)}。`)
+  if (Number.isFinite(pct)) {
+    segs.push(`${pct >= 0 ? '上涨' : '下跌'}${Math.abs(pct).toFixed(2)}%，日内${formatPrice(range.low)}至${formatPrice(range.high)}区间运行。`)
+  }
+  if (quote.amount && quote.amount > 0) segs.push(`成交额${formatMoney(quote.amount)}。`)
+  if (quote.turnover && quote.turnover > 0) segs.push(`换手率${formatPercent(quote.turnover)}。`)
+  if (quote.floatCap && quote.floatCap > 0) segs.push(`流通市值${formatMoney(quote.floatCap)}。`)
+
+  return segs.join('')
+}
+
+/** 页 3：估值与盈利 */
+function pageValue(stock: StockSprite, quote: Quote): string {
+  const segs: string[] = []
+
+  segs.push(`${stock.name}估值方面：`)
+  const pe = quote.peTtm ?? quote.pe
+  if (pe && pe > 0) segs.push(`市盈率TTM约${formatRatio(pe)}倍。`)
+  if (quote.pb && quote.pb > 0) segs.push(`市净率${formatRatio(quote.pb)}倍。`)
+  if (quote.roe != null) segs.push(`净资产收益率ROE${formatPercent(quote.roe)}。`)
+  if (quote.eps && quote.eps > 0) segs.push(`每股收益${formatRatio(quote.eps)}元。`)
+  if (quote.dividendYield != null && quote.dividendYield > 0) segs.push(`股息率${formatPercent(quote.dividendYield)}。`)
+
+  return segs.join('')
+}
+
+/** 组装所有文字页，内容不足的页自动跳过；至少保留公司简介页 */
+function buildPages(stock: StockSprite, info: CompanyInfo | null, quote: Quote): string[] {
+  const pages = [pageIntro(stock, info, quote)]
+  if (quote.live) {
+    pages.push(pageQuote(stock, quote))
+    pages.push(pageValue(stock, quote))
+  }
+  return pages
 }
 
 export function PortraitIntro({
@@ -131,8 +171,10 @@ export function PortraitIntro({
   caught: boolean
   quote: Quote
 }) {
-  const [showText, setShowText] = useState(false)
+  // 页 0 = 精灵，1..N = 文字页
+  const [page, setPage] = useState(0)
   const [info, setInfo] = useState<CompanyInfo | null>(null)
+  const [pages, setPages] = useState<string[]>([])
 
   // 拉取公司 F10 资料
   useEffect(() => {
@@ -149,13 +191,27 @@ export function PortraitIntro({
     }
   }, [stock.id, stock.code, stock.market, seen])
 
-  // 定时切换：精灵 ↔ 文字介绍
+  const textPages = seen ? pages : []
+  // F10 异步到达后页数会变化，用 ref 让定时器/点击始终取最新总页数
+  const totalRef = useRef(1)
+  totalRef.current = textPages.length + 1
+
+  // 定时切换下一页
   useEffect(() => {
     if (!seen) return
-    setShowText(false)
-    const t = window.setInterval(() => setShowText((v) => !v), 7000)
+    setPage(0)
+    setPages(buildPages(stock, null, quote))
+    const t = window.setInterval(() => setPage((v) => (v + 1) % totalRef.current), 7000)
     return () => window.clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stock.id, seen])
+
+  // F10 资料到达后刷新文字页（页数可能变化）
+  useEffect(() => {
+    if (!seen) return
+    setPages(buildPages(stock, info, quote))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stock.id, info, quote.live, quote.price, quote.marketCap])
 
   if (!seen) {
     return (
@@ -165,15 +221,39 @@ export function PortraitIntro({
     )
   }
 
-  const text = buildIntro(stock, info, quote)
+  const total = textPages.length + 1
+  const showSprite = page === 0
+  const text = textPages[(page - 1 + textPages.length) % Math.max(textPages.length, 1)] ?? ''
 
   return (
-    <div className="portrait portrait-intro">
-      <div className={`pi-layer pi-sprite ${showText ? 'pi-hide' : 'pi-show'}`}>
+    <div
+      className="portrait portrait-intro"
+      role="button"
+      tabIndex={0}
+      onClick={() => setPage((v) => (v + 1) % total)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          setPage((v) => (v + 1) % total)
+        }
+      }}
+      aria-label="点击切换股票介绍"
+    >
+      <div className={`pi-layer pi-sprite ${showSprite ? 'pi-show' : 'pi-hide'}`}>
         <PixelSprite stock={stock} size="xl" bounce />
         {caught ? <i className="ball caught big" /> : null}
       </div>
-      <p className={`pi-layer pi-text ${showText ? 'pi-show' : 'pi-hide'}`}>{text}</p>
+      {!showSprite ? (
+        <p key={page} className="pi-layer pi-text pi-show">
+          {text}
+        </p>
+      ) : null}
+      <span className="pi-hint">点击切换 ▸</span>
+      <span className="pi-dots">
+        {Array.from({ length: total }, (_, i) => (
+          <i key={i} className={i === page ? 'on' : ''} />
+        ))}
+      </span>
     </div>
   )
 }
