@@ -32,6 +32,30 @@ export function moveLog(stock: StockSprite, quote: Quote) {
   return logs.slice(-6)
 }
 
+/** 当日 Top 利多 / 利空消息：按波动幅度排序，各取前 3 条 */
+export function topNews(stock: StockSprite, quote: Quote) {
+  const type = stock.types[0]
+  const [low, mid, high] = MOVE_BOOK[type]
+  const bull: { name: string; text: string; power: number }[] = []
+  const bear: { name: string; text: string; power: number }[] = []
+  const pts = quote.series
+  for (let i = 1; i < pts.length; i++) {
+    const delta = ((pts[i] - pts[i - 1]) / pts[i - 1]) * 100
+    if (Math.abs(delta) < 0.35) continue
+    const name = delta > 1.6 ? high : delta > 0 ? mid : low
+    const item = {
+      name,
+      text: `${delta > 0 ? '+' : ''}${delta.toFixed(2)}%`,
+      power: delta,
+    }
+    if (delta > 0) bull.push(item)
+    else bear.push(item)
+  }
+  bull.sort((a, b) => b.power - a.power)
+  bear.sort((a, b) => a.power - b.power)
+  return { bull: bull.slice(0, 3), bear: bear.slice(0, 3) }
+}
+
 export function habitText(stock: StockSprite, quote: Quote) {
   const pct = changePct(quote)
   if (pct > 3) return `买盘很热。${stock.name}今天情绪偏高，适合记下这笔波动，不宜追着加仓观察位。`

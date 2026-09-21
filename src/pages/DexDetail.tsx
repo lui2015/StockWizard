@@ -8,7 +8,7 @@ import { TypeBadge } from '../components/TypeBadge'
 import { useEffect, useState } from 'react'
 import { fetchChart } from '../api/chart'
 import { useGame } from '../store/gameStore'
-import { moveLog } from '../utils/moves'
+import { topNews } from '../utils/moves'
 import { quoteIdOf, listingOf } from '../utils/quoteId'
 import { changePct, dayRange, formatPrice, formatTime, percentileNote, pricePercentile } from '../utils/quotes'
 import { levelOf, rarityLabel } from '../utils/stats'
@@ -35,6 +35,7 @@ export function DexDetail({ id, tab = 'dex' }: { id: string; tab?: 'dex' | 'obse
   const [picking, setPicking] = useState(false)
   const pct = changePct(quote)
   const range = dayRange(quote)
+  const news = topNews(stock, quote)
   const [dayCloses, setDayCloses] = useState<number[]>([])
   const rank = pricePercentile(quote.price, dayCloses)
 
@@ -246,15 +247,29 @@ export function DexDetail({ id, tab = 'dex' }: { id: string; tab?: 'dex' | 'obse
                 <b>{rank == null ? '—%' : `${Math.round(rank)}%`}</b>
               </div>
               <p className="habit">{percentileNote(stock.name, rank, dayCloses.length)}</p>
-              <h3>行情日志</h3>
+              <h3>当日利多消息</h3>
               <ul className="moves">
-                {moveLog(stock, quote).map((m, idx) => (
+                {news.bull.map((m, idx) => (
                   <li key={`${m.name}-${idx}`}>
-                    <b>{m.name}</b>
-                    <span className={m.power >= 0 ? 'up' : 'down'}>{m.text}</span>
+                    <b>
+                      TOP{idx + 1} · {m.name}
+                    </b>
+                    <span className="up">{m.text}</span>
                   </li>
                 ))}
-                {moveLog(stock, quote).length === 0 ? <li>今日几乎没有明显波动，它在横盘休息。</li> : null}
+                {news.bull.length === 0 ? <li>今日暂无明显利多消息。</li> : null}
+              </ul>
+              <h3>当日利空消息</h3>
+              <ul className="moves">
+                {news.bear.map((m, idx) => (
+                  <li key={`${m.name}-${idx}`}>
+                    <b>
+                      TOP{idx + 1} · {m.name}
+                    </b>
+                    <span className="down">{m.text}</span>
+                  </li>
+                ))}
+                {news.bear.length === 0 ? <li>今日暂无明显利空消息。</li> : null}
               </ul>
             </>
           )}
