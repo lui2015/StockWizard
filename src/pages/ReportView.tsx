@@ -41,6 +41,7 @@ export function ReportView({ id }: { id: string }) {
       subtitle="仅供阅读 · 不构成投资建议"
       src={api(`/api/reports/${encodeURIComponent(id)}/raw`)}
       sandbox="allow-same-origin"
+      defaultFullscreen
     />
   )
 }

@@ -9,13 +9,15 @@ export function EmbedPage({
   subtitle,
   src,
   sandbox,
+  defaultFullscreen = false,
 }: {
   title: string
   subtitle: string
   src: string
   sandbox?: string
+  defaultFullscreen?: boolean
 }) {
-  const [fullscreen, setFullscreen] = useState(false)
+  const [fullscreen, setFullscreen] = useState(defaultFullscreen)
 
   useEffect(() => {
     if (!fullscreen) return
