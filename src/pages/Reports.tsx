@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createReport, deleteReport, listReports, type ReportMeta } from '../api/reports'
+import { api } from '../api/base'
 import { REPORT_API, REPORT_API_HELP, REPORT_PROMPT } from '../data/reportPrompt'
 import { useGame } from '../store/gameStore'
 import { sfx } from '../utils/sound'
@@ -157,20 +158,30 @@ export function Reports() {
                 </span>
               </button>
               {settings ? (
-                <button
-                  className="tiny"
-                  onClick={() => {
-                    if (!confirm(`删除「${row.title}」？`)) return
-                    void deleteReport(row.id)
-                      .then(() => {
-                        play(sfx.run)
-                        return refresh()
-                      })
-                      .catch((err) => setError(err instanceof Error ? err.message : '删除失败'))
-                  }}
-                >
-                  删
-                </button>
+                <span className="report-ops">
+                  <a
+                    className="tiny"
+                    href={api(`/api/reports/${encodeURIComponent(row.id)}/raw`)}
+                    download={`${row.title.replace(/[\\/:*?"<>|]/g, '_')}.html`}
+                    onClick={() => play(sfx.blip)}
+                  >
+                    下载
+                  </a>
+                  <button
+                    className="tiny"
+                    onClick={() => {
+                      if (!confirm(`删除「${row.title}」？`)) return
+                      void deleteReport(row.id)
+                        .then(() => {
+                          play(sfx.run)
+                          return refresh()
+                        })
+                        .catch((err) => setError(err instanceof Error ? err.message : '删除失败'))
+                    }}
+                  >
+                    删
+                  </button>
+                </span>
               ) : null}
             </div>
           </li>

@@ -577,6 +577,19 @@ button {
   grid-template-columns: 52px 1fr !important;
 }
 
+/* 报告行内操作（下载 / 删除） */
+.report-ops {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+a.tiny {
+  display: inline-block;
+  text-decoration: none;
+  line-height: 1.2;
+}
+
 .report-help {
   display: grid;
   gap: 10px;
