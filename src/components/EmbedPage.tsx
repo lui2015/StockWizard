@@ -10,12 +10,14 @@ export function EmbedPage({
   src,
   sandbox,
   defaultFullscreen = false,
+  onBack,
 }: {
   title: string
   subtitle: string
   src: string
   sandbox?: string
   defaultFullscreen?: boolean
+  onBack?: () => void
 }) {
   const [fullscreen, setFullscreen] = useState(defaultFullscreen)
 
@@ -36,6 +38,11 @@ export function EmbedPage({
           <p>{subtitle}</p>
         </div>
         <div className="head-ops">
+          {onBack ? (
+            <button className="tiny" onClick={onBack}>
+              返回列表
+            </button>
+          ) : null}
           <button className="tiny" onClick={() => setFullscreen((v) => !v)}>
             {fullscreen ? '退出全屏' : '全屏'}
           </button>

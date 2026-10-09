@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { getReport } from '../api/reports'
 import { api } from '../api/base'
 import { EmbedPage } from '../components/EmbedPage'
+import { useGame } from '../store/gameStore'
 
 export function ReportView({ id }: { id: string }) {
+  const { setScreen } = useGame()
   const [title, setTitle] = useState('分析报告')
   const [error, setError] = useState('')
 
@@ -42,6 +44,7 @@ export function ReportView({ id }: { id: string }) {
       src={api(`/api/reports/${encodeURIComponent(id)}/raw`)}
       sandbox="allow-same-origin"
       defaultFullscreen
+      onBack={() => setScreen({ name: 'reports' })}
     />
   )
 }
