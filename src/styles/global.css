@@ -583,6 +583,18 @@ button {
   margin: 12px 0;
 }
 
+/* 分析报告：右上角设置区（上传/接口/删除 收拢入口） */
+.report-settings {
+  display: grid;
+  gap: 8px;
+  margin: 2px 0 4px;
+}
+
+.head-ops .tiny.on {
+  background: var(--red);
+  color: #fff;
+}
+
 .report-code {
   margin: 0;
   padding: 10px;

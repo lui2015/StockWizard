@@ -10,6 +10,7 @@ export function Reports() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [help, setHelp] = useState(false)
+  const [settings, setSettings] = useState(false)
   const [copied, setCopied] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -68,22 +69,22 @@ export function Reports() {
           <h2>分析报告</h2>
           <p>{rows.length} 份 · HTML · 本机保存</p>
         </div>
+        <div className="head-ops">
+          <button
+            className={settings ? 'tiny on' : 'tiny'}
+            onClick={() => {
+              play(sfx.blip)
+              setSettings((v) => {
+                if (v) setHelp(false)
+                return !v
+              })
+            }}
+          >
+            设置
+          </button>
+        </div>
       </header>
 
-      <div className="actions">
-        <button className="btn" disabled={busy} onClick={() => fileRef.current?.click()}>
-          {busy ? '上传中…' : '上传 HTML'}
-        </button>
-        <button
-          className="btn ghost"
-          onClick={() => {
-            play(sfx.blip)
-            setHelp((v) => !v)
-          }}
-        >
-          {help ? '收起接口' : '开放接口'}
-        </button>
-      </div>
       <input
         ref={fileRef}
         type="file"
@@ -94,6 +95,25 @@ export function Reports() {
           if (file) void uploadFile(file)
         }}
       />
+
+      {settings ? (
+        <section className="report-settings">
+          <div className="actions">
+            <button className="btn" disabled={busy} onClick={() => fileRef.current?.click()}>
+              {busy ? '上传中…' : '上传 HTML'}
+            </button>
+            <button
+              className="btn ghost"
+              onClick={() => {
+                play(sfx.blip)
+                setHelp((v) => !v)
+              }}
+            >
+              {help ? '收起接口' : '开放接口'}
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       {help ? (
         <section className="report-help">
@@ -136,20 +156,22 @@ export function Reports() {
                   </small>
                 </span>
               </button>
-              <button
-                className="tiny"
-                onClick={() => {
-                  if (!confirm(`删除「${row.title}」？`)) return
-                  void deleteReport(row.id)
-                    .then(() => {
-                      play(sfx.run)
-                      return refresh()
-                    })
-                    .catch((err) => setError(err instanceof Error ? err.message : '删除失败'))
-                }}
-              >
-                删
-              </button>
+              {settings ? (
+                <button
+                  className="tiny"
+                  onClick={() => {
+                    if (!confirm(`删除「${row.title}」？`)) return
+                    void deleteReport(row.id)
+                      .then(() => {
+                        play(sfx.run)
+                        return refresh()
+                      })
+                      .catch((err) => setError(err instanceof Error ? err.message : '删除失败'))
+                  }}
+                >
+                  删
+                </button>
+              ) : null}
             </div>
           </li>
         ))}
