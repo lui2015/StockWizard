@@ -668,6 +668,26 @@ a.tiny {
   box-shadow: none;
 }
 
+/* 全屏沉浸模式：iframe 内容下滑时头部滑出隐藏，上滑恢复 */
+.report-view.fullscreen .panel-head {
+  position: relative;
+  z-index: 5;
+  background: var(--screen);
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease;
+}
+
+.report-view.fullscreen.head-hide .panel-head {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  transform: translateY(-110%);
+  opacity: 0;
+  pointer-events: none;
+}
+
 .report-frame {
   width: 100%;
   flex: 1;
