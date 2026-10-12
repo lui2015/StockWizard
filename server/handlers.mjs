@@ -219,7 +219,7 @@ async function fetchF10Fundamentals(secid) {
     f108: numOrDash(row.EPSJB),
     f109: numOrDash(row.PARENTNETPROFIT),
     f183: numOrDash(row.TOTALOPERATEREVE),
-    f173: numOrDash(row.WEIGHTAVG_ROE),
+    f173: numOrDash(row.ROEJQ),
     f186: numOrDash(row.XSMLL),
     f187: numOrDash(row.XSJLL),
   }
