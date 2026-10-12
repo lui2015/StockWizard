@@ -759,7 +759,7 @@ a.tiny {
 
 .squad-bar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
   margin: 0 0 12px;
 }
@@ -767,8 +767,13 @@ a.tiny {
 .squad-bar button {
   border: 3px solid var(--ink);
   background: #fff;
-  padding: 6px 10px;
-  min-width: 64px;
+  padding: 6px 4px;
+  min-width: 0;
+  flex: 1 1 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .squad-bar button.on {
