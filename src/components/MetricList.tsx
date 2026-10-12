@@ -44,7 +44,13 @@ const GROUPS: { title: string; items: (quote: Quote) => Metric[] }[] = [
   },
 ]
 
-export function MetricList({ quote }: { quote: Quote }) {
+export function MetricList({
+  quote,
+  industryFallback,
+}: {
+  quote: Quote
+  industryFallback?: string
+}) {
   return (
     <div className="metric-board">
       {GROUPS.map((group) => (
@@ -54,7 +60,7 @@ export function MetricList({ quote }: { quote: Quote }) {
             {group.items(quote).map((row) => (
               <li key={row.label}>
                 <span>{row.label}</span>
-                <b>{row.value}</b>
+                <b>{row.label === '行业' && !quote.industry ? industryFallback || '—' : row.value}</b>
               </li>
             ))}
           </ul>

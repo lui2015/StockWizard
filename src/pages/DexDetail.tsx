@@ -283,7 +283,7 @@ export function DexDetail({ id, tab = 'dex' }: { id: string; tab?: 'dex' | 'obse
           ) : (
             <>
               {quote.live ? (
-                <MetricList quote={quote} />
+                <MetricList quote={quote} industryFallback={stock.category} />
               ) : (
                 <p className="empty">正在接入市盈率、市净率等分析指标…</p>
               )}

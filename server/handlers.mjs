@@ -124,6 +124,7 @@ function txToEmRow(secid, f) {
     f23: pb,
     f84: !isIndex && marketCap ? Math.round(marketCap / price) : '-',
     f133: dividend,
+    f163: isA ? txNum(f, 53) : '-',
     f164: txNum(f, 39),
     f188: '-',
     f197: dividend,
@@ -147,7 +148,7 @@ function emQuoteDataFromRow(row) {
     f117: row.f21,
     f127: '-',
     f162: row.f9,
-    f163: '-',
+    f163: row.f163,
     f164: row.f164,
     f167: row.f23,
     f168: row.f8,
@@ -173,6 +174,57 @@ async function fetchTxQuotes(txList) {
 
 function lookupTx(map, code) {
   return map.get(code) ?? map.get(code.replace(/\..*$/, ''))
+}
+
+// ===== F10 财务指标补全 =====
+// 腾讯行情没有 ROE/净利润/营收/利润率等指标，东财 push2 又被封，
+// 从东财 datacenter（与 /radar/fin 同源，可用）拉 F10 主要指标补齐，缓存 1 小时。
+const f10Cache = new Map() // secid -> { ts, data }
+const F10_TTL = 60 * 60 * 1000
+
+async function fetchF10Fundamentals(secid) {
+  const cached = f10Cache.get(secid)
+  if (cached && Date.now() - cached.ts < F10_TTL) return cached.data
+  const dot = String(secid ?? '').indexOf('.')
+  const mkt = String(secid ?? '').slice(0, dot)
+  const code = String(secid ?? '').slice(dot + 1)
+  if (!['1', '0', '90'].includes(mkt) || !code) return null
+  const secu = `${code}.${mkt === '1' ? 'SH' : mkt === '0' ? 'SZ' : 'BJ'}`
+  const qs = new URLSearchParams({
+    type: 'RPT_F10_FINANCE_MAINFINADATA',
+    sty: 'APP_F10_MAINFINADATA',
+    filter: `(SECUCODE="${secu}")`,
+    p: '1',
+    ps: '1',
+    sr: '-1',
+    st: 'REPORT_DATE',
+    source: 'HSF10',
+    client: 'PC',
+  })
+  const res = await fetch(`https://datacenter.eastmoney.com/securities/api/data/get?${qs}`, {
+    headers: {
+      'User-Agent': UA,
+      Accept: 'application/json',
+      Referer: 'https://emweb.securities.eastmoney.com/',
+    },
+    signal: AbortSignal.timeout(8000),
+  })
+  if (!res.ok) throw new Error(`f10 ${res.status}`)
+  const json = await res.json()
+  const row = json?.result?.data?.[0]
+  if (!row) throw new Error('f10 empty')
+  const numOrDash = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : '-')
+  const data = {
+    // 东财 push2 字段号：f108 每股收益 f109 净利润 f183 营收 f173 ROE f186 毛利率 f187 净利率
+    f108: numOrDash(row.EPSJB),
+    f109: numOrDash(row.PARENTNETPROFIT),
+    f183: numOrDash(row.TOTALOPERATEREVE),
+    f173: numOrDash(row.WEIGHTAVG_ROE),
+    f186: numOrDash(row.XSMLL),
+    f187: numOrDash(row.XSJLL),
+  }
+  f10Cache.set(secid, { ts: Date.now(), data })
+  return data
 }
 
 /** 批量行情 → 东财 ulist 格式 */
@@ -404,9 +456,17 @@ export function createRadarMiddleware() {
       try {
         let payload = null
         if (url === '/radar/quote') {
-          const list = await tencentUlist(query.get('secid') ?? '')
+          const secid = query.get('secid') ?? ''
+          const list = await tencentUlist(secid)
           const row = list.data.diff[0]
-          payload = row ? { data: emQuoteDataFromRow(row) } : null
+          if (row) {
+            const data = emQuoteDataFromRow(row)
+            // F10 财务指标补全（ROE/净利润/营收/利润率/每股收益），失败不阻塞
+            const f10 = await fetchF10Fundamentals(secid).catch(() => null)
+            payload = { data: f10 ? { ...data, ...f10 } : data }
+          } else {
+            payload = null
+          }
         } else if (url === '/radar/ulist') {
           payload = await tencentUlist(query.get('secids') ?? '')
         } else if (url === '/radar/trends') {
