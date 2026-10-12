@@ -113,4 +113,5 @@ export interface SaveData {
   soundOn: boolean
   started: boolean
   discovered: StockSprite[]
+  reportLinks: Record<string, string[]>
 }

@@ -49,6 +49,7 @@ function defaultSave(): SaveData {
     soundOn: true,
     started: false,
     discovered: [],
+    reportLinks: {},
   }
 }
 
@@ -90,6 +91,8 @@ function sanitizeOwned(save: SaveData): SaveData {
 function parseSave(stored: Partial<SaveData>): SaveData {
   const parsed = { ...defaultSave(), ...stored } as SaveData
   parsed.holdings = parsed.holdings ?? {}
+  parsed.reportLinks =
+    parsed.reportLinks && typeof parsed.reportLinks === 'object' ? parsed.reportLinks : {}
   parsed.discovered = (parsed.discovered ?? []).map((stock) => ({
     ...stock,
     types: stock.types.map(migrateSector) as StockSprite['types'],
@@ -131,6 +134,8 @@ interface GameContextValue {
   leaveParty: (id: string) => void
   moveParty: (id: string, dir: -1 | 1) => void
   setHolding: (id: string, holding: Holding | null) => void
+  linkReport: (stockId: string, reportId: string) => void
+  unlinkReport: (stockId: string, reportId: string) => void
   switchSquad: (id: string) => void
   addSquad: () => boolean
   renameSquad: (id: string, name: string) => void
@@ -408,6 +413,23 @@ export function GameProvider({ children }: { children: ReactNode }) {
           if (!holding || holding.qty <= 0 || holding.cost <= 0) delete holdings[id]
           else holdings[id] = { cost: holding.cost, qty: holding.qty }
           return { ...prev, holdings }
+        })
+      },
+      linkReport: (stockId, reportId) => {
+        setSave((prev) => {
+          const links = prev.reportLinks ?? {}
+          const list = links[stockId] ?? []
+          if (list.includes(reportId)) return prev
+          return { ...prev, reportLinks: { ...links, [stockId]: [...list, reportId] } }
+        })
+      },
+      unlinkReport: (stockId, reportId) => {
+        setSave((prev) => {
+          const links = prev.reportLinks ?? {}
+          const list = links[stockId] ?? []
+          const next = { ...links, [stockId]: list.filter((x) => x !== reportId) }
+          if (next[stockId].length === 0) delete next[stockId]
+          return { ...prev, reportLinks: next }
         })
       },
       addToParty: (id) => {

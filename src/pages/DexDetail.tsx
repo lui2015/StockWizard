@@ -1,5 +1,6 @@
 import { DialogBox } from '../components/DialogBox'
 import { PortraitIntro } from '../components/PortraitIntro'
+import { ReportLinks } from '../components/ReportLinks'
 import { PriceChart } from '../components/PriceChart'
 import { ProfitChart } from '../components/ProfitChart'
 import { HoldingPanel } from '../components/HoldingPanel'
@@ -288,6 +289,7 @@ export function DexDetail({ id, tab = 'dex' }: { id: string; tab?: 'dex' | 'obse
                 <p className="empty">正在接入市盈率、市净率等分析指标…</p>
               )}
               <ProfitChart quoteId={quoteIdOf(stock)} />
+              <ReportLinks stockId={stock.id} />
             </>
           )}
         </section>

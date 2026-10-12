@@ -596,6 +596,59 @@ a.tiny {
   margin: 12px 0;
 }
 
+/* 分析页：关联分析报告 */
+.report-links {
+  display: grid;
+  gap: 8px;
+}
+
+.report-links h3 {
+  margin: 0;
+}
+
+.report-links .link-list {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.report-links .link-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.report-links .link-item {
+  width: 100%;
+  text-align: left;
+  border: 3px solid var(--ink);
+  background: #fff;
+  padding: 6px 10px;
+  display: grid;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.report-links .link-item b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-links .link-item small {
+  opacity: 0.65;
+  font-size: 11px;
+}
+
+.report-links .link-picker {
+  display: grid;
+  gap: 6px;
+  border: 3px dashed var(--ink);
+  padding: 8px;
+  background: #fffdf6;
+}
+
 /* 分析报告：右上角设置区（上传/接口/删除 收拢入口） */
 .report-settings {
   display: grid;
