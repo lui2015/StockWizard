@@ -203,6 +203,7 @@ export function Party() {
           const closes = dayCloses[id] ?? []
           const rank = pricePercentile(quote.price, closes.slice(-500))
           const mid5y = medianPrice(closes)
+          const firedAlerts = (save.alerts?.[id] ?? []).filter((a) => a.triggered)
           return (
             <li key={id} className={`party-slot ${editing ? 'editing' : ''}`}>
               <button
@@ -225,6 +226,14 @@ export function Party() {
                       ))}
                     </div>
                   </div>
+                  {firedAlerts.length ? (
+                    <div className="alert-flag">
+                      🔔{' '}
+                      {firedAlerts
+                        .map((a) => `${a.side === 'buy' ? '买入' : '卖出'}到价 ${formatPrice(a.price)}`)
+                        .join(' · ')}
+                    </div>
+                  ) : null}
                   <div className={`party-quote ${pct >= 0 ? 'up' : 'down'}`}>
                     <strong>{quote.live ? formatPrice(quote.price) : '——.—'}</strong>
                     <small>
