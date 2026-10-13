@@ -188,40 +188,81 @@ async function fetchF10Fundamentals(secid) {
   const dot = String(secid ?? '').indexOf('.')
   const mkt = String(secid ?? '').slice(0, dot)
   const code = String(secid ?? '').slice(dot + 1)
-  if (!['1', '0', '90'].includes(mkt) || !code) return null
-  const secu = `${code}.${mkt === '1' ? 'SH' : mkt === '0' ? 'SZ' : 'BJ'}`
-  const qs = new URLSearchParams({
-    type: 'RPT_F10_FINANCE_MAINFINADATA',
-    sty: 'APP_F10_MAINFINADATA',
-    filter: `(SECUCODE="${secu}")`,
-    p: '1',
-    ps: '1',
-    sr: '-1',
-    st: 'REPORT_DATE',
-    source: 'HSF10',
-    client: 'PC',
-  })
-  const res = await fetch(`https://datacenter.eastmoney.com/securities/api/data/get?${qs}`, {
-    headers: {
-      'User-Agent': UA,
-      Accept: 'application/json',
-      Referer: 'https://emweb.securities.eastmoney.com/',
-    },
-    signal: AbortSignal.timeout(8000),
-  })
-  if (!res.ok) throw new Error(`f10 ${res.status}`)
-  const json = await res.json()
-  const row = json?.result?.data?.[0]
-  if (!row) throw new Error('f10 empty')
-  const numOrDash = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : '-')
-  const data = {
-    // 东财 push2 字段号：f108 每股收益 f109 净利润 f183 营收 f173 ROE f186 毛利率 f187 净利率
-    f108: numOrDash(row.EPSJB),
-    f109: numOrDash(row.PARENTNETPROFIT),
-    f183: numOrDash(row.TOTALOPERATEREVE),
-    f173: numOrDash(row.ROEJQ),
-    f186: numOrDash(row.XSMLL),
-    f187: numOrDash(row.XSJLL),
+  if (!['1', '0', '90', '116', '128'].includes(mkt) || !code) return null
+  let data
+  if (mkt === '116' || mkt === '128') {
+    // 港股：HKF10 主要指标
+    const qs = new URLSearchParams({
+      reportName: 'RPT_HKF10_FN_MAININDICATOR',
+      columns: 'ALL',
+      filter: `(SECUCODE="${code}.HK")`,
+      pageNumber: '1',
+      pageSize: '1',
+      sortColumns: 'REPORT_DATE',
+      sortTypes: '-1',
+      source: 'F10',
+      client: 'PC',
+    })
+    const res = await fetch(
+      `https://datacenter.eastmoney.com/securities/api/data/v1/get?${qs}`,
+      {
+        headers: {
+          'User-Agent': UA,
+          Accept: 'application/json',
+          Referer: 'https://emweb.securities.eastmoney.com/',
+        },
+        signal: AbortSignal.timeout(8000),
+      },
+    )
+    if (!res.ok) throw new Error(`f10hk ${res.status}`)
+    const json = await res.json()
+    const row = json?.result?.data?.[0]
+    if (!row) throw new Error('f10hk empty')
+    const numOrDash = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : '-')
+    data = {
+      f108: numOrDash(row.BASIC_EPS),
+      f109: numOrDash(row.HOLDER_PROFIT),
+      f183: numOrDash(row.OPERATE_INCOME),
+      f173: numOrDash(row.ROE_YEARLY),
+      f186: numOrDash(row.GROSS_PROFIT_RATIO),
+      f187: numOrDash(row.NET_PROFIT_RATIO),
+    }
+  } else {
+    // A股（沪深京）：F10 主要指标
+    const secu = `${code}.${mkt === '1' ? 'SH' : mkt === '0' ? 'SZ' : 'BJ'}`
+    const qs = new URLSearchParams({
+      type: 'RPT_F10_FINANCE_MAINFINADATA',
+      sty: 'APP_F10_MAINFINADATA',
+      filter: `(SECUCODE="${secu}")`,
+      p: '1',
+      ps: '1',
+      sr: '-1',
+      st: 'REPORT_DATE',
+      source: 'HSF10',
+      client: 'PC',
+    })
+    const res = await fetch(`https://datacenter.eastmoney.com/securities/api/data/get?${qs}`, {
+      headers: {
+        'User-Agent': UA,
+        Accept: 'application/json',
+        Referer: 'https://emweb.securities.eastmoney.com/',
+      },
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!res.ok) throw new Error(`f10 ${res.status}`)
+    const json = await res.json()
+    const row = json?.result?.data?.[0]
+    if (!row) throw new Error('f10 empty')
+    const numOrDash = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : '-')
+    data = {
+      // 东财 push2 字段号：f108 每股收益 f109 净利润 f183 营收 f173 ROE f186 毛利率 f187 净利率
+      f108: numOrDash(row.EPSJB),
+      f109: numOrDash(row.PARENTNETPROFIT),
+      f183: numOrDash(row.TOTALOPERATEREVE),
+      f173: numOrDash(row.ROEJQ),
+      f186: numOrDash(row.XSMLL),
+      f187: numOrDash(row.XSJLL),
+    }
   }
   f10Cache.set(secid, { ts: Date.now(), data })
   return data
