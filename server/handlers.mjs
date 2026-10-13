@@ -112,7 +112,7 @@ function txToEmRow(secid, f) {
     f5: txNum(f, 36),
     f6: amount,
     f7: txNum(f, 43),
-    f8: txNum(f, 38),
+    f8: txNum(f, 38) || '-',
     f9: isA ? txNum(f, 52) : '-',
     f10: isA ? txNum(f, 49) : '-',
     f15: txNum(f, 33),
@@ -182,7 +182,7 @@ function lookupTx(map, code) {
 const f10Cache = new Map() // secid -> { ts, data }
 const F10_TTL = 60 * 60 * 1000
 
-async function fetchF10Fundamentals(secid) {
+async function fetchF10Fundamentals(secid, price = 0) {
   const cached = f10Cache.get(secid)
   if (cached && Date.now() - cached.ts < F10_TTL) return cached.data
   const dot = String(secid ?? '').indexOf('.')
@@ -191,13 +191,13 @@ async function fetchF10Fundamentals(secid) {
   if (!['1', '0', '90', '116', '128'].includes(mkt) || !code) return null
   let data
   if (mkt === '116' || mkt === '128') {
-    // 港股：HKF10 主要指标
+    // 港股：HKF10 主要指标（多取几期，找最近年报算市盈静，TTM EPS 算市盈动）
     const qs = new URLSearchParams({
       reportName: 'RPT_HKF10_FN_MAININDICATOR',
       columns: 'ALL',
       filter: `(SECUCODE="${code}.HK")`,
       pageNumber: '1',
-      pageSize: '1',
+      pageSize: '8',
       sortColumns: 'REPORT_DATE',
       sortTypes: '-1',
       source: 'F10',
@@ -216,9 +216,13 @@ async function fetchF10Fundamentals(secid) {
     )
     if (!res.ok) throw new Error(`f10hk ${res.status}`)
     const json = await res.json()
-    const row = json?.result?.data?.[0]
+    const list = json?.result?.data ?? []
+    const row = list[0]
     if (!row) throw new Error('f10hk empty')
     const numOrDash = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : '-')
+    const peFrom = (eps) =>
+      typeof eps === 'number' && eps > 0 && price > 0 ? Math.round((price / eps) * 100) / 100 : '-'
+    const annual = list.find((r) => String(r?.REPORT_DATE ?? '').includes('-12-31'))
     data = {
       f108: numOrDash(row.BASIC_EPS),
       f109: numOrDash(row.HOLDER_PROFIT),
@@ -226,6 +230,9 @@ async function fetchF10Fundamentals(secid) {
       f173: numOrDash(row.ROE_YEARLY),
       f186: numOrDash(row.GROSS_PROFIT_RATIO),
       f187: numOrDash(row.NET_PROFIT_RATIO),
+      // 港股行情源无静态/动态 PE：市盈静=现价/年报EPS，市盈动=现价/TTM EPS
+      f163: peFrom(annual?.BASIC_EPS),
+      f162: peFrom(row.EPS_TTM),
     }
   } else {
     // A股（沪深京）：F10 主要指标
@@ -503,7 +510,7 @@ export function createRadarMiddleware() {
           if (row) {
             const data = emQuoteDataFromRow(row)
             // F10 财务指标补全（ROE/净利润/营收/利润率/每股收益），失败不阻塞
-            const f10 = await fetchF10Fundamentals(secid).catch(() => null)
+            const f10 = await fetchF10Fundamentals(secid, row.f2).catch(() => null)
             payload = { data: f10 ? { ...data, ...f10 } : data }
           } else {
             payload = null
