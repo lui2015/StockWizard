@@ -226,14 +226,6 @@ export function Party() {
                       ))}
                     </div>
                   </div>
-                  {firedAlerts.length ? (
-                    <div className="alert-flag">
-                      🔔{' '}
-                      {firedAlerts
-                        .map((a) => `${a.side === 'buy' ? '买入' : '卖出'}到价 ${formatPrice(a.price)}`)
-                        .join(' · ')}
-                    </div>
-                  ) : null}
                   <div className={`party-quote ${pct >= 0 ? 'up' : 'down'}`}>
                     <strong>{quote.live ? formatPrice(quote.price) : '——.—'}</strong>
                     <small>
@@ -286,6 +278,14 @@ export function Party() {
                     )}
                   </div>
                 </div>
+                {firedAlerts.length ? (
+                  <div className="party-alert-row">
+                    🔔{' '}
+                    {firedAlerts
+                      .map((a) => `${a.side === 'buy' ? '买入' : '卖出'}到价 ${formatPrice(a.price)}`)
+                      .join(' · ')}
+                  </div>
+                ) : null}
               </button>
               {editing ? (
                 <div className="party-ops">
