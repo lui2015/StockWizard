@@ -94,6 +94,16 @@ export interface Holding {
   qty: number
 }
 
+/** 价格提醒：到达预期价提示买入/卖出 */
+export interface PriceAlert {
+  id: string
+  side: 'buy' | 'sell'
+  price: number
+  createdAt: number
+  triggered: boolean
+  triggeredAt?: number
+}
+
 export interface Squad {
   id: string
   name: string
@@ -114,4 +124,5 @@ export interface SaveData {
   started: boolean
   discovered: StockSprite[]
   reportLinks: Record<string, string[]>
+  alerts: Record<string, PriceAlert[]>
 }

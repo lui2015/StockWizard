@@ -602,6 +602,130 @@ a.tiny {
   gap: 8px;
 }
 
+/* 观察页：买入/卖出价格提醒 */
+.alert-panel {
+  display: grid;
+  gap: 8px;
+}
+
+.alert-panel h3 {
+  margin: 0;
+}
+
+.alert-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.alert-form .side-btn {
+  border: 3px solid var(--ink);
+  background: #fff;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.alert-form .side-btn.buy.on {
+  background: #e2493b;
+  color: #fff;
+}
+
+.alert-form .side-btn.sell.on {
+  background: #1f7a33;
+  color: #fff;
+}
+
+.alert-form .alert-price {
+  flex: 1 1 120px;
+  min-width: 0;
+  border: 3px solid var(--ink);
+  background: #fff;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.alert-list {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.alert-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border: 3px solid var(--ink);
+  background: #fff;
+  padding: 6px 8px;
+}
+
+.alert-list li.fired {
+  opacity: 0.7;
+  background: var(--yellow);
+}
+
+.alert-list .alert-side {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink);
+  color: #fff;
+  font-size: 12px;
+}
+
+.alert-list .alert-side.buy {
+  background: #e2493b;
+}
+
+.alert-list .alert-side.sell {
+  background: #1f7a33;
+}
+
+.alert-list li b {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.alert-list li small {
+  opacity: 0.7;
+}
+
+/* 全局提醒触发弹窗 */
+.alert-toast {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  display: grid;
+  gap: 4px;
+  max-width: min(86vw, 420px);
+  border: 4px solid var(--ink);
+  background: var(--yellow);
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 10px 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.alert-toast b {
+  font-size: 13px;
+}
+
+.alert-toast span {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.alert-toast small {
+  opacity: 0.6;
+  font-size: 10px;
+}
+
 .report-links h3 {
   margin: 0;
 }

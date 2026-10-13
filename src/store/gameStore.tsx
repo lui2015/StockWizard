@@ -50,6 +50,7 @@ function defaultSave(): SaveData {
     started: false,
     discovered: [],
     reportLinks: {},
+    alerts: {},
   }
 }
 
@@ -93,6 +94,7 @@ function parseSave(stored: Partial<SaveData>): SaveData {
   parsed.holdings = parsed.holdings ?? {}
   parsed.reportLinks =
     parsed.reportLinks && typeof parsed.reportLinks === 'object' ? parsed.reportLinks : {}
+  parsed.alerts = parsed.alerts && typeof parsed.alerts === 'object' ? parsed.alerts : {}
   parsed.discovered = (parsed.discovered ?? []).map((stock) => ({
     ...stock,
     types: stock.types.map(migrateSector) as StockSprite['types'],
@@ -136,6 +138,9 @@ interface GameContextValue {
   setHolding: (id: string, holding: Holding | null) => void
   linkReport: (stockId: string, reportId: string) => void
   unlinkReport: (stockId: string, reportId: string) => void
+  addAlert: (stockId: string, side: 'buy' | 'sell', price: number) => void
+  removeAlert: (stockId: string, alertId: string) => void
+  fireAlert: (stockId: string, alertId: string) => void
   switchSquad: (id: string) => void
   addSquad: () => boolean
   renameSquad: (id: string, name: string) => void
@@ -430,6 +435,44 @@ export function GameProvider({ children }: { children: ReactNode }) {
           const next = { ...links, [stockId]: list.filter((x) => x !== reportId) }
           if (next[stockId].length === 0) delete next[stockId]
           return { ...prev, reportLinks: next }
+        })
+      },
+      addAlert: (stockId, side, price) => {
+        setSave((prev) => {
+          const alerts = { ...(prev.alerts ?? {}) }
+          const list = alerts[stockId] ?? []
+          if (list.length >= 6) return prev
+          const item = {
+            id: `al-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4)}`,
+            side,
+            price,
+            createdAt: Date.now(),
+            triggered: false,
+          }
+          alerts[stockId] = [...list, item]
+          return { ...prev, alerts }
+        })
+      },
+      removeAlert: (stockId, alertId) => {
+        setSave((prev) => {
+          const alerts = { ...(prev.alerts ?? {}) }
+          const list = (alerts[stockId] ?? []).filter((a) => a.id !== alertId)
+          if (list.length) alerts[stockId] = list
+          else delete alerts[stockId]
+          return { ...prev, alerts }
+        })
+      },
+      fireAlert: (stockId, alertId) => {
+        setSave((prev) => {
+          const alerts = { ...(prev.alerts ?? {}) }
+          const list = alerts[stockId] ?? []
+          const next = list.map((a) =>
+            a.id === alertId && !a.triggered
+              ? { ...a, triggered: true, triggeredAt: Date.now() }
+              : a,
+          )
+          alerts[stockId] = next
+          return { ...prev, alerts }
         })
       },
       addToParty: (id) => {
