@@ -101,6 +101,12 @@ function txToEmRow(secid, f) {
   const floatCap = !isIndex && floatYi > 0 ? floatYi * 1e8 : undefined
   const dividend = isA && txNum(f, 64) > 0 ? txNum(f, 64) : '-'
   const pb = isA ? txNum(f, 46) : kind === 'hk' ? txNum(f, 47) : '-'
+  // 港股行情不带换手率：成交量 / 总股本 换算
+  const hkShares = kind === 'hk' && !isIndex && capYi > 0 ? (capYi * 1e8) / price : 0
+  const hkTurnover =
+    hkShares > 0 && txNum(f, 36) > 0
+      ? Math.round((txNum(f, 36) / hkShares) * 10000) / 100
+      : '-'
 
   return {
     f12: rawCode,
@@ -112,7 +118,7 @@ function txToEmRow(secid, f) {
     f5: txNum(f, 36),
     f6: amount,
     f7: txNum(f, 43),
-    f8: txNum(f, 38) || '-',
+    f8: isA ? txNum(f, 38) || '-' : kind === 'hk' && !isIndex ? hkTurnover : '-',
     f9: isA ? txNum(f, 52) : '-',
     f10: isA ? txNum(f, 49) : '-',
     f15: txNum(f, 33),
@@ -146,7 +152,7 @@ function emQuoteDataFromRow(row) {
     f84: row.f84,
     f116: row.f20,
     f117: row.f21,
-    f127: '-',
+    f127: '',
     f162: row.f9,
     f163: row.f163,
     f164: row.f164,
@@ -230,6 +236,7 @@ async function fetchF10Fundamentals(secid, price = 0) {
       f173: numOrDash(row.ROE_YEARLY),
       f186: numOrDash(row.GROSS_PROFIT_RATIO),
       f187: numOrDash(row.NET_PROFIT_RATIO),
+      f197: numOrDash(row.DIVIDEND_RATE),
       // 港股行情源无静态/动态 PE：市盈静=现价/年报EPS，市盈动=现价/TTM EPS
       f163: peFrom(annual?.BASIC_EPS),
       f162: peFrom(row.EPS_TTM),
@@ -272,6 +279,36 @@ async function fetchF10Fundamentals(secid, price = 0) {
     }
   }
   f10Cache.set(secid, { ts: Date.now(), data })
+  return data
+}
+
+// 量比：今日成交量 / 近 5 日平均成交量（腾讯行情不带港股量比，用日 K 换算，缓存 10 分钟）
+const vrCache = new Map() // secid -> { ts, data }
+const VR_TTL = 10 * 60 * 1000
+
+async function fetchVolumeRatio(secid) {
+  const cached = vrCache.get(secid)
+  if (cached && Date.now() - cached.ts < VR_TTL) return cached.data
+  const code = txCodeOf(secid)
+  if (!code) throw new Error('bad secid')
+  const host = code.startsWith('us')
+    ? 'https://web.ifzq.gtimg.cn/appstock/app/usfqkline/get'
+    : 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get'
+  const res = await fetch(`${host}?param=${encodeURIComponent(`${code},day,,,6,qfq`)}`, {
+    headers: TX_HEADERS,
+    signal: AbortSignal.timeout(8000),
+  })
+  if (!res.ok) throw new Error(`vr ${res.status}`)
+  const json = await res.json()
+  const pack = json?.data?.[code] ?? {}
+  const rows = (pack.qfqday ?? pack.day ?? []).filter((r) => Array.isArray(r))
+  const vols = rows.map((r) => Number(r[5]) || 0).filter((v) => v > 0)
+  if (vols.length < 6) throw new Error('vr not enough')
+  const today = vols[vols.length - 1]
+  const avg5 = vols.slice(-6, -1).reduce((a, b) => a + b, 0) / 5
+  if (!(avg5 > 0)) throw new Error('vr zero')
+  const data = Math.round((today / avg5) * 100) / 100
+  vrCache.set(secid, { ts: Date.now(), data })
   return data
 }
 
@@ -508,10 +545,16 @@ export function createRadarMiddleware() {
           const list = await tencentUlist(secid)
           const row = list.data.diff[0]
           if (row) {
-            const data = emQuoteDataFromRow(row)
+            let data = emQuoteDataFromRow(row)
             // F10 财务指标补全（ROE/净利润/营收/利润率/每股收益），失败不阻塞
             const f10 = await fetchF10Fundamentals(secid, row.f2).catch(() => null)
-            payload = { data: f10 ? { ...data, ...f10 } : data }
+            if (f10) data = { ...data, ...f10 }
+            // 量比缺失（港股）时用日 K 换算，失败不阻塞
+            if (data.f50 === '-' || data.f50 == null) {
+              const vr = await fetchVolumeRatio(secid).catch(() => null)
+              if (vr != null) data.f50 = vr
+            }
+            payload = { data }
           } else {
             payload = null
           }
