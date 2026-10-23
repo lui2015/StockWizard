@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type PointerEvent } from 'react'
 import { fetchChart, type Bar, type ChartPeriod } from '../api/chart'
-import type { Holding, Quote, StockSprite } from '../data/types'
+import type { Holding, StockSprite } from '../data/types'
 import { formatSigned } from '../utils/holding'
 
 const PERIODS: { id: ChartPeriod; label: string }[] = [
@@ -29,11 +29,9 @@ function yOf(value: number, min: number, span: number) {
 export function PnlChart({
   stock,
   holding,
-  quote,
 }: {
   stock: StockSprite
   holding: Holding
-  quote: Quote
 }) {
   const [period, setPeriod] = useState<ChartPeriod>('minute')
   const [bars, setBars] = useState<Bar[]>([])

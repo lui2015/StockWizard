@@ -240,7 +240,7 @@ export function DexDetail({ id, tab = 'dex' }: { id: string; tab?: 'dex' | 'obse
               />
               <PriceAlertPanel stock={stock} quote={quote} />
               {save.holdings[id] && save.holdings[id].cost > 0 && save.holdings[id].qty > 0 ? (
-                <PnlChart stock={stock} holding={save.holdings[id]} quote={quote} />
+                <PnlChart stock={stock} holding={save.holdings[id]} />
               ) : null}
               <PriceChart stock={stock} quote={quote} />
               <div className="hp-wrap">
