@@ -2,6 +2,7 @@ import { DialogBox } from '../components/DialogBox'
 import { PortraitIntro } from '../components/PortraitIntro'
 import { ReportLinks } from '../components/ReportLinks'
 import { PriceAlertPanel } from '../components/PriceAlertPanel'
+import { PnlChart } from '../components/PnlChart'
 import { PriceChart } from '../components/PriceChart'
 import { ProfitChart } from '../components/ProfitChart'
 import { HoldingPanel } from '../components/HoldingPanel'
@@ -238,6 +239,9 @@ export function DexDetail({ id, tab = 'dex' }: { id: string; tab?: 'dex' | 'obse
                 }}
               />
               <PriceAlertPanel stock={stock} quote={quote} />
+              {save.holdings[id] && save.holdings[id].cost > 0 && save.holdings[id].qty > 0 ? (
+                <PnlChart stock={stock} holding={save.holdings[id]} quote={quote} />
+              ) : null}
               <PriceChart stock={stock} quote={quote} />
               <div className="hp-wrap">
                 <span>历史分位</span>
