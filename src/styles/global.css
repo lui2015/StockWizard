@@ -694,6 +694,74 @@ a.tiny {
   opacity: 0.7;
 }
 
+/* 持仓盈亏走势卡片 */
+.pnl-card {
+  display: grid;
+  gap: 8px;
+  border: 3px solid var(--ink);
+  background: #fffdf6;
+  padding: 10px 12px;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.pnl-card .pnl-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pnl-card h3 {
+  margin: 0;
+}
+
+.pnl-card .pnl-ranges {
+  display: flex;
+  gap: 4px;
+}
+
+.pnl-card .pnl-ranges button {
+  border: 2px solid var(--ink);
+  background: #fff;
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+.pnl-card .pnl-ranges button.on {
+  background: var(--ink);
+  color: #fff;
+}
+
+.pnl-card .pnl-svg {
+  display: block;
+  width: 100%;
+  touch-action: none;
+}
+
+.pnl-card .pnl-xaxis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+.pnl-card .pnl-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: 12px;
+}
+
+.pnl-card .pnl-summary b {
+  font-size: 14px;
+}
+
+.pnl-card .pnl-summary span {
+  opacity: 0.7;
+}
+
 .report-links h3 {
   margin: 0;
 }
