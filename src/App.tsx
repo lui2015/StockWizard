@@ -15,6 +15,7 @@ import { TrainerCard } from './pages/TrainerCard'
 import { AcademyView } from './pages/AcademyView'
 import { QuotesView } from './pages/QuotesView'
 import { DecisionView } from './pages/DecisionView'
+import { AskVoteView } from './pages/AskVoteView'
 import { AccountView } from './pages/AccountView'
 import { sfx } from './utils/sound'
 
@@ -72,6 +73,9 @@ export function App() {
       break
     case 'decision':
       view = <DecisionView />
+      break
+    case 'askvote':
+      view = <AskVoteView />
       break
     case 'account':
       view = <AccountView />
