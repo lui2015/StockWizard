@@ -3,6 +3,7 @@ import { PortraitIntro } from '../components/PortraitIntro'
 import { ReportLinks } from '../components/ReportLinks'
 import { PriceAlertPanel } from '../components/PriceAlertPanel'
 import { PnlChart } from '../components/PnlChart'
+import { StockNewsPanel } from '../components/StockNewsPanel'
 import { PriceChart } from '../components/PriceChart'
 import { ProfitChart } from '../components/ProfitChart'
 import { HoldingPanel } from '../components/HoldingPanel'
@@ -11,7 +12,6 @@ import { TypeBadge } from '../components/TypeBadge'
 import { useEffect, useState } from 'react'
 import { fetchChart } from '../api/chart'
 import { useGame } from '../store/gameStore'
-import { topNews } from '../utils/moves'
 import { quoteIdOf, listingOf } from '../utils/quoteId'
 import { changePct, dayRange, formatPrice, formatTime, percentileNote, pricePercentile } from '../utils/quotes'
 import { levelOf, rarityLabel } from '../utils/stats'
@@ -38,7 +38,6 @@ export function DexDetail({ id, tab = 'dex' }: { id: string; tab?: 'dex' | 'obse
   const [picking, setPicking] = useState(false)
   const pct = changePct(quote)
   const range = dayRange(quote)
-  const news = topNews(stock, quote)
   const [dayCloses, setDayCloses] = useState<number[]>([])
   const rank = pricePercentile(quote.price, dayCloses)
 
@@ -254,30 +253,7 @@ export function DexDetail({ id, tab = 'dex' }: { id: string; tab?: 'dex' | 'obse
                 <b>{rank == null ? '—%' : `${Math.round(rank)}%`}</b>
               </div>
               <p className="habit">{percentileNote(stock.name, rank, dayCloses.length)}</p>
-              <h3>当日利多消息</h3>
-              <ul className="moves">
-                {news.bull.map((m, idx) => (
-                  <li key={`${m.name}-${idx}`}>
-                    <b>
-                      TOP{idx + 1} · {m.name}
-                    </b>
-                    <span className="up">{m.text}</span>
-                  </li>
-                ))}
-                {news.bull.length === 0 ? <li>今日暂无明显利多消息。</li> : null}
-              </ul>
-              <h3>当日利空消息</h3>
-              <ul className="moves">
-                {news.bear.map((m, idx) => (
-                  <li key={`${m.name}-${idx}`}>
-                    <b>
-                      TOP{idx + 1} · {m.name}
-                    </b>
-                    <span className="down">{m.text}</span>
-                  </li>
-                ))}
-                {news.bear.length === 0 ? <li>今日暂无明显利空消息。</li> : null}
-              </ul>
+              <StockNewsPanel stock={stock} />
             </>
           )}
         </section>

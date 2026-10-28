@@ -312,6 +312,42 @@ async function fetchVolumeRatio(secid) {
   return data
 }
 
+// 个股资讯：东财 np-listapi 开放接口代理（缓存 10 分钟）
+const newsCache = new Map() // secid -> { ts, data }
+const NEWS_TTL = 10 * 60 * 1000
+
+async function fetchStockNews(secid) {
+  const cached = newsCache.get(secid)
+  if (cached && Date.now() - cached.ts < NEWS_TTL) return cached.data
+  const qs = new URLSearchParams({
+    client: 'web',
+    mTypeAndCode: secid,
+    pageSize: '30',
+    type: '0',
+    req_trace: String(Date.now()),
+  })
+  const res = await fetch(`https://np-listapi.eastmoney.com/comm/web/getListInfo?${qs}`, {
+    headers: {
+      'User-Agent': UA,
+      Accept: 'application/json',
+      Referer: 'https://quote.eastmoney.com/',
+    },
+    signal: AbortSignal.timeout(8000),
+  })
+  if (!res.ok) throw new Error(`news ${res.status}`)
+  const json = await res.json()
+  const data = (json?.data?.list ?? [])
+    .map((r) => ({
+      code: String(r.Art_Code ?? ''),
+      title: String(r.Art_Title ?? '').trim(),
+      time: String(r.Art_ShowTime ?? ''),
+      url: String(r.Art_Url ?? r.Art_OriginUrl ?? ''),
+    }))
+    .filter((r) => r.title && r.url)
+  newsCache.set(secid, { ts: Date.now(), data })
+  return data
+}
+
 /** 批量行情 → 东财 ulist 格式 */
 async function tencentUlist(secids) {
   const ids = String(secids ?? '')
@@ -533,7 +569,8 @@ export function createRadarMiddleware() {
       (url === '/radar/quote' ||
         url === '/radar/ulist' ||
         url === '/radar/trends' ||
-        url === '/radar/kline')
+        url === '/radar/kline' ||
+        url === '/radar/news')
     ) {
       const query = new URLSearchParams(
         req.url?.includes('?') ? req.url.slice(req.url.indexOf('?') + 1) : '',
@@ -562,6 +599,9 @@ export function createRadarMiddleware() {
           payload = await tencentUlist(query.get('secids') ?? '')
         } else if (url === '/radar/trends') {
           payload = await tencentTrends(query.get('secid') ?? '')
+        } else if (url === '/radar/news') {
+          const news = await fetchStockNews(query.get('secid') ?? '').catch(() => null)
+          payload = news ? { data: { list: news } } : null
         } else {
           payload = await tencentKline(query.get('secid') ?? '', Number(query.get('lmt')))
         }
