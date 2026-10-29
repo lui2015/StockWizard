@@ -700,6 +700,47 @@ a.tiny {
   gap: 8px;
 }
 
+/* 图鉴页：基本面指标 */
+.fund-strip {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 14px;
+  border: 3px solid var(--ink);
+  background: #fff;
+  padding: 6px 12px;
+}
+
+.fund-strip li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 2px dashed #cfc6b0;
+  padding: 5px 0;
+  min-width: 0;
+}
+
+.fund-strip li:nth-last-child(-n + 2) {
+  border-bottom: none;
+}
+
+.fund-strip li span {
+  font-size: 12px;
+  opacity: 0.65;
+  flex: 0 0 auto;
+}
+
+.fund-strip li b {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .news-panel h3 {
   margin: 0;
 }
