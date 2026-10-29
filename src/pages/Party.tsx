@@ -267,14 +267,26 @@ export function Party() {
                     </span>
                   </div>
                   <div className={`party-pnl ${pos ? (pos.pnl >= 0 ? 'up' : 'down') : 'mute'}`}>
-                    <small>持仓盈亏</small>
                     {pos ? (
                       <>
-                        <strong>{formatSigned(pos.pnl)}</strong>
-                        <small>{formatSigned(pos.pct)}%</small>
+                        <div className="pnl-line">
+                          <small>今日盈亏</small>
+                          <strong className={amt * pos.qty >= 0 ? 'up' : 'down'}>
+                            {formatSigned(amt * pos.qty)}
+                          </strong>
+                          <small>{formatSigned(pct)}%</small>
+                        </div>
+                        <div className="pnl-line">
+                          <small>累计盈亏</small>
+                          <strong>{formatSigned(pos.pnl)}</strong>
+                          <small>{formatSigned(pos.pct)}%</small>
+                        </div>
                       </>
                     ) : (
-                      <small>未建仓</small>
+                      <>
+                        <small>持仓盈亏</small>
+                        <small>未建仓</small>
+                      </>
                     )}
                   </div>
                 </div>

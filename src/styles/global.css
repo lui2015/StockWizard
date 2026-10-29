@@ -1785,6 +1785,26 @@ a.tiny {
   line-height: 1.2;
 }
 
+.party-pnl .pnl-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.party-pnl .pnl-line strong {
+  font-size: 14px;
+}
+
+.party-pnl .pnl-line strong.up {
+  color: #c41e3a;
+}
+
+.party-pnl .pnl-line strong.down {
+  color: #2d5a27;
+}
+
 .party-pnl small {
   font-size: 11px;
   line-height: 1.3;
@@ -3291,6 +3311,11 @@ a.tiny {
     align-items: baseline;
     justify-content: flex-start;
     gap: 6px 10px;
+  }
+
+  .party-pnl .pnl-line {
+    flex: 1 1 100%;
+    justify-content: space-between;
     text-align: left;
   }
 
