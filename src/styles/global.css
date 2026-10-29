@@ -318,6 +318,23 @@ button {
   line-height: 1.7;
 }
 
+/* 图鉴页 行业/上市/业务：桌面一行，手机各占一行 */
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 0;
+}
+
+.meta span {
+  white-space: nowrap;
+}
+
+.meta span + span::before {
+  content: '·';
+  margin: 0 8px;
+  opacity: 0.5;
+}
+
 .panel-head.row {
   display: flex;
   align-items: center;
@@ -3311,6 +3328,15 @@ a.tiny {
 
   .party-meta .rank-row {
     grid-column: 1;
+  }
+
+  .meta {
+    flex-direction: column;
+  }
+
+  .meta span + span::before {
+    content: none;
+    margin: 0;
   }
 
   .party-stats {

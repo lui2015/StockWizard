@@ -109,11 +109,9 @@ export function DexDetail({ id, tab = 'dex' }: { id: string; tab?: 'dex' | 'obse
                 <span className="level-tag">Lv.{levelOf(stock, quote)}</span>
               </div>
               <p className="meta">
-                行业 {stock.category}
-                <br />
-                上市 {listingOf(stock)} · {stock.heightLabel}
-                <br />
-                业务 {stock.weightLabel}
+                <span>行业 {stock.category}</span>
+                <span>上市 {listingOf(stock)} · {stock.heightLabel}</span>
+                <span>业务 {stock.weightLabel}</span>
               </p>
               <Fundamentals quote={quote} />
               <DialogBox speaker="公司档案" text={stock.dexText} />
