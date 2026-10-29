@@ -1699,10 +1699,10 @@ a.tiny {
 }
 
 .party-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
 }
 
 .party-meta b small {
@@ -1798,26 +1798,6 @@ a.tiny {
 .party-pnl strong {
   font-size: 15px;
   line-height: 1.2;
-}
-
-.party-pnl .pnl-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 8px;
-  min-width: 0;
-}
-
-.party-pnl .pnl-line strong {
-  font-size: 14px;
-}
-
-.party-pnl .pnl-line strong.up {
-  color: #c41e3a;
-}
-
-.party-pnl .pnl-line strong.down {
-  color: #2d5a27;
 }
 
 .party-pnl small {
@@ -3326,12 +3306,6 @@ a.tiny {
     align-items: baseline;
     justify-content: flex-start;
     gap: 6px 10px;
-  }
-
-  .party-pnl .pnl-line {
-    flex: 1 1 100%;
-    justify-content: space-between;
-    text-align: left;
   }
 
   .party-slot.editing {
