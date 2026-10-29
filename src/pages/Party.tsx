@@ -44,6 +44,24 @@ export function Party() {
     { cost: 0, pnl: 0 },
   )
   const teamPct = teamHold.cost > 0 ? (teamHold.pnl / teamHold.cost) * 100 : null
+  // 队伍今日盈亏：Σ (现价 − 昨收) × 数量，基准为昨收市值
+  const teamToday = party.reduce(
+    (acc, id) => {
+      const stock = getSprite(id)
+      const quote = quotes[id] ?? {
+        price: stock.basePrice,
+        open: stock.basePrice,
+        prevClose: stock.basePrice,
+        series: [stock.basePrice],
+      }
+      const pos = positionOf(save.holdings[id], quote)
+      if (!pos) return acc
+      const base = quote.prevClose || quote.open || quote.price
+      return { amt: acc.amt + (quote.price - base) * pos.qty, base: acc.base + base * pos.qty }
+    },
+    { amt: 0, base: 0 },
+  )
+  const teamTodayPct = teamToday.base > 0 ? (teamToday.amt / teamToday.base) * 100 : null
   const [editing, setEditing] = useState(false)
   const [draftName, setDraftName] = useState(squad?.name ?? '')
   const [dayCloses, setDayCloses] = useState<Record<string, number[]>>({})
@@ -172,17 +190,29 @@ export function Party() {
       <div
         className={`squad-pnl ${teamPct == null ? 'mute' : teamHold.pnl >= 0 ? 'up' : 'down'}`}
       >
-        <span>持仓盈亏</span>
-        <strong>
-          {teamPct == null ? (
-            '未建仓'
-          ) : (
-            <>
-              {formatSigned(teamHold.pnl)}
-              <em>{formatSigned(teamPct)}%</em>
-            </>
-          )}
-        </strong>
+        {teamPct == null ? (
+          <>
+            <span>持仓盈亏</span>
+            <strong>未建仓</strong>
+          </>
+        ) : (
+          <>
+            <div className="pnl-line">
+              <span>今日盈亏</span>
+              <strong className={teamToday.amt >= 0 ? 'up' : 'down'}>
+                {formatSigned(teamToday.amt)}
+                <em>{formatSigned(teamTodayPct ?? 0)}%</em>
+              </strong>
+            </div>
+            <div className="pnl-line">
+              <span>累计盈亏</span>
+              <strong>
+                {formatSigned(teamHold.pnl)}
+                <em>{formatSigned(teamPct)}%</em>
+              </strong>
+            </div>
+          </>
+        )}
       </div>
 
       <ol className="party-list">
