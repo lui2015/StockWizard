@@ -1068,9 +1068,10 @@ a.tiny {
 
 .squad-pnl {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
   border: 3px solid var(--ink);
   background: #fffdf6;
   padding: 8px 10px;
@@ -1079,9 +1080,8 @@ a.tiny {
 }
 
 .squad-pnl .pnl-line {
-  display: flex;
+  display: inline-flex;
   align-items: baseline;
-  justify-content: space-between;
   gap: 10px;
 }
 
