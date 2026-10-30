@@ -141,6 +141,7 @@ interface GameContextValue {
   addAlert: (stockId: string, side: 'buy' | 'sell', price: number) => void
   removeAlert: (stockId: string, alertId: string) => void
   fireAlert: (stockId: string, alertId: string) => void
+  importData: (patch: Partial<SaveData>) => void
   switchSquad: (id: string) => void
   addSquad: () => boolean
   renameSquad: (id: string, name: string) => void
@@ -473,6 +474,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
           )
           alerts[stockId] = next
           return { ...prev, alerts }
+        })
+      },
+      importData: (patch) => {
+        setSave((prev) => {
+          const clean = Object.fromEntries(
+            Object.entries(patch).filter(([, v]) => v !== undefined),
+          )
+          return parseSave({ ...prev, ...clean } as Partial<SaveData>)
         })
       },
       addToParty: (id) => {

@@ -1,16 +1,71 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useGame } from '../store/gameStore'
+import type { SaveData } from '../data/types'
 import { sfx } from '../utils/sound'
 
+/** 股票相关数据字段（导出/导入范围） */
+const DATA_FIELDS: (keyof SaveData)[] = [
+  'seen',
+  'captured',
+  'squads',
+  'activeSquadId',
+  'catchAttempts',
+  'holdings',
+  'alerts',
+  'reportLinks',
+  'discovered',
+]
+
 export function Settings() {
-  const { save, toggleSound, reset, setScreen, play, user, logout } = useGame()
+  const { save, toggleSound, reset, setScreen, play, user, logout, importData } = useGame()
   const [busy, setBusy] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const signOut = async () => {
     setBusy(true)
     await logout()
     play(sfx.blip)
     setBusy(false)
+  }
+
+  const exportData = () => {
+    const data = Object.fromEntries(DATA_FIELDS.map((key) => [key, save[key]]))
+    const payload = {
+      app: 'StockWizard',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      data,
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `stockwizard-data-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    play(sfx.select)
+  }
+
+  const onImportFile = (file: File) => {
+    void file
+      .text()
+      .then((text) => {
+        const json = JSON.parse(text) as { app?: string; data?: Partial<SaveData> }
+        const data = json?.data ?? json
+        if (!data || typeof data !== 'object') throw new Error('文件格式不正确')
+        const patch: Partial<SaveData> = {}
+        for (const key of DATA_FIELDS) {
+          const value = (data as Record<string, unknown>)[key]
+          if (value !== undefined) (patch as Record<string, unknown>)[key] = value
+        }
+        if (Object.keys(patch).length === 0) throw new Error('文件里没有可导入的股票数据')
+        if (!confirm('导入将覆盖当前的持仓、提醒、队伍与图鉴数据，确定继续？')) return
+        importData(patch)
+        play(sfx.select)
+      })
+      .catch((err) => {
+        alert(`导入失败：${err instanceof Error ? err.message : '文件解析出错'}`)
+      })
   }
 
   return (
@@ -48,6 +103,27 @@ export function Settings() {
         >
           重置图鉴
         </button>
+        <h3>数据</h3>
+        <p className="fine">导出 / 导入我的股票相关数据：自选图鉴、持仓成本、买卖提醒、队伍与关联报告（JSON 文件）。</p>
+        <div className="actions">
+          <button className="btn" onClick={exportData}>
+            导出数据
+          </button>
+          <button className="btn ghost" onClick={() => fileRef.current?.click()}>
+            导入数据
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".json,application/json"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) onImportFile(file)
+              e.target.value = ''
+            }}
+          />
+        </div>
         <h3>账号</h3>
         {user ? (
           <div className="account-strip">
