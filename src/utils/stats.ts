@@ -36,13 +36,29 @@ export function catchRate(
   return Math.max(0.16, Math.min(0.82, rate))
 }
 
-export function trainerTitle(pct: number | null, captured = 0, total = 0) {
+export function todayStr() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/**
+ * 训练家称号：持仓收益率 + 猜涨跌命中率共同决定。
+ * 命中率每高于 50% 十个百分点，等效 +1% 收益加成。
+ */
+export function trainerTitle(
+  pct: number | null,
+  captured = 0,
+  total = 0,
+  hitRate?: number | null,
+) {
   if (total > 0 && captured >= total) return '图鉴完成者'
-  if (pct == null) return '路过的观察员'
-  if (pct >= 20) return '投资冠军'
-  if (pct >= 10) return '冠军挑战者'
-  if (pct >= 5) return '精英训练家'
-  if (pct >= 2) return '正式训练家'
+  if (pct == null && (hitRate == null || Number.isNaN(hitRate))) return '路过的观察员'
+  const bonus = hitRate == null || Number.isNaN(hitRate) ? 0 : (hitRate - 50) * 0.1
+  const score = (pct ?? 0) + bonus
+  if (score >= 20) return '投资冠军'
+  if (score >= 10) return '冠军挑战者'
+  if (score >= 5) return '精英训练家'
+  if (score >= 2) return '正式训练家'
   return '新人训练家'
 }
 

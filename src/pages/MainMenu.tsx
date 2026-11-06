@@ -10,6 +10,7 @@ const ITEMS: { name: Screen['name']; title: string; desc: string }[] = [
   { name: 'decision', title: '训练家决策', desc: '投资决策助手 · 助你科学下单' },
   { name: 'askvote', title: '求一票', desc: '为看好的股票拉票助威' },
   { name: 'reports', title: '分析报告', desc: '上传 HTML 研报，或用接口交给 AI 写入' },
+  { name: 'guess', title: '猜涨跌', desc: '预测明日大盘与持仓涨跌 · 命中率决定称号' },
 ]
 
 export function MainMenu() {

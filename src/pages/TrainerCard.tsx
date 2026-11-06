@@ -19,7 +19,16 @@ export function TrainerCard() {
 
   const holdIds = save.captured.filter((id) => save.holdings[id])
   const book = bookOf(holdIds, save.holdings, quotes, priceOf)
-  const title = trainerTitle(book.count > 0 ? book.pct : null, save.captured.length, catalog.length)
+  const guessResolved = (save.guesses ?? []).filter((g) => g.resolved)
+  const hitRate = guessResolved.length
+    ? (guessResolved.filter((g) => g.correct).length / guessResolved.length) * 100
+    : null
+  const title = trainerTitle(
+    book.count > 0 ? book.pct : null,
+    save.captured.length,
+    catalog.length,
+    hitRate,
+  )
   const squadBooks = save.squads.map((squad) => ({
     squad,
     book: bookOf(

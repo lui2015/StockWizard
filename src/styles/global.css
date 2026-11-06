@@ -717,6 +717,119 @@ a.tiny {
   gap: 8px;
 }
 
+/* 猜涨跌 */
+.guess-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.guess-stat {
+  display: grid;
+  gap: 3px;
+  border: 3px solid var(--ink);
+  background: #fffdf6;
+  padding: 8px;
+  text-align: center;
+}
+
+.guess-stat b {
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.guess-stat small {
+  font-size: 10px;
+  opacity: 0.65;
+}
+
+.guess-list {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.guess-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  border: 3px solid var(--ink);
+  background: #fff;
+  padding: 8px 10px;
+}
+
+.guess-item .guess-info {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.guess-item .guess-info small {
+  font-size: 11px;
+  opacity: 0.65;
+}
+
+.guess-ops {
+  display: flex;
+  gap: 6px;
+}
+
+.btn.tiny.up {
+  border-color: var(--ink);
+  color: #c41e3a;
+}
+
+.btn.tiny.down {
+  border-color: var(--ink);
+  color: #2d5a27;
+}
+
+.guess-picked {
+  font-size: 12px;
+  border: 3px dashed var(--ink);
+  padding: 4px 8px;
+  background: var(--yellow);
+}
+
+.guess-picked.up {
+  color: #c41e3a;
+}
+
+.guess-picked.down {
+  color: #2d5a27;
+}
+
+.guess-history {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.guess-history li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  border-bottom: 2px dashed #cfc6b0;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.guess-history em {
+  margin-left: auto;
+  font-style: normal;
+}
+
+.guess-history em.up {
+  color: #c41e3a;
+}
+
+.guess-history em.down {
+  color: #2d5a27;
+}
+
 /* 图鉴页：基本面指标 */
 .fund-strip {
   list-style: none;

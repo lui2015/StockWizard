@@ -26,6 +26,7 @@ export type Screen =
   | { name: 'quotes' }
   | { name: 'decision' }
   | { name: 'askvote' }
+  | { name: 'guess' }
   | { name: 'account' }
   | { name: 'reports' }
   | { name: 'report'; id: string }
@@ -111,6 +112,19 @@ export interface Squad {
   members: string[]
 }
 
+/** 猜涨跌记录：target 为 `index:<secid>` 或股票 id；date 为下注当天 */
+export interface GuessRecord {
+  id: string
+  date: string
+  target: string
+  label: string
+  guess: 'up' | 'down'
+  resolved: boolean
+  correct?: boolean
+  change?: number
+  resolvedAt?: number
+}
+
 export interface SaveData {
   trainerName: string
   trainerId: string
@@ -126,4 +140,5 @@ export interface SaveData {
   discovered: StockSprite[]
   reportLinks: Record<string, string[]>
   alerts: Record<string, PriceAlert[]>
+  guesses: GuessRecord[]
 }

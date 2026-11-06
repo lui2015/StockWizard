@@ -13,6 +13,7 @@ const DATA_FIELDS: (keyof SaveData)[] = [
   'holdings',
   'alerts',
   'reportLinks',
+  'guesses',
   'discovered',
 ]
 

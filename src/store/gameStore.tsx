@@ -26,7 +26,7 @@ import { fetchBatchQuotes, fetchLiveQuote } from '../api/eastmoney'
 import { quoteIdOf } from '../utils/quoteId'
 import { buildInitialQuotes } from '../utils/quotes'
 import { quoteFromLive } from '../utils/wildStock'
-import { catchRate } from '../utils/stats'
+import { catchRate, todayStr } from '../utils/stats'
 import { activeSquad, makeSquad, MAX_SQUADS, migrateSquads, withActiveMembers } from '../utils/squads'
 
 const SAVE_KEY = 'stock-wizard-save-v1'
@@ -51,6 +51,7 @@ function defaultSave(): SaveData {
     discovered: [],
     reportLinks: {},
     alerts: {},
+    guesses: [],
   }
 }
 
@@ -95,6 +96,7 @@ function parseSave(stored: Partial<SaveData>): SaveData {
   parsed.reportLinks =
     parsed.reportLinks && typeof parsed.reportLinks === 'object' ? parsed.reportLinks : {}
   parsed.alerts = parsed.alerts && typeof parsed.alerts === 'object' ? parsed.alerts : {}
+  parsed.guesses = Array.isArray(parsed.guesses) ? parsed.guesses : []
   parsed.discovered = (parsed.discovered ?? []).map((stock) => ({
     ...stock,
     types: stock.types.map(migrateSector) as StockSprite['types'],
@@ -141,6 +143,8 @@ interface GameContextValue {
   addAlert: (stockId: string, side: 'buy' | 'sell', price: number) => void
   removeAlert: (stockId: string, alertId: string) => void
   fireAlert: (stockId: string, alertId: string) => void
+  addGuess: (target: string, label: string, guess: 'up' | 'down') => boolean
+  resolveGuesses: (results: { id: string; change: number }[]) => void
   importData: (patch: Partial<SaveData>) => void
   switchSquad: (id: string) => void
   addSquad: () => boolean
@@ -482,6 +486,47 @@ export function GameProvider({ children }: { children: ReactNode }) {
             Object.entries(patch).filter(([, v]) => v !== undefined),
           )
           return parseSave({ ...prev, ...clean } as Partial<SaveData>)
+        })
+      },
+      addGuess: (target, label, guess) => {
+        const today = todayStr()
+        if ((saveRef.current?.guesses ?? []).some((g) => g.target === target && g.date === today)) {
+          return false
+        }
+        setSave((prev) => ({
+          ...prev,
+          guesses: [
+            {
+              id: `guess-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+              date: today,
+              target,
+              label,
+              guess,
+              resolved: false,
+            },
+            ...(prev.guesses ?? []),
+          ],
+        }))
+        return true
+      },
+      resolveGuesses: (results) => {
+        setSave((prev) => {
+          const map = new Map(results.map((r) => [r.id, r]))
+          let changed = false
+          const guesses = (prev.guesses ?? []).map((g) => {
+            if (g.resolved) return g
+            const hit = map.get(g.id)
+            if (!hit) return g
+            changed = true
+            return {
+              ...g,
+              resolved: true,
+              change: hit.change,
+              correct: hit.change >= 0 ? g.guess === 'up' : g.guess === 'down',
+              resolvedAt: Date.now(),
+            }
+          })
+          return changed ? { ...prev, guesses } : prev
         })
       },
       addToParty: (id) => {
