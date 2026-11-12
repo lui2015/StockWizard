@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/base'
 import { quoteIdOf } from '../utils/quoteId'
 import { formatMoney } from '../utils/quotes'
+import { REVENUE_MIX } from '../data/revenueMix'
 import type { StockSprite } from '../data/types'
 
 interface MixItem {
@@ -46,16 +47,19 @@ export function RevenueMix({ stock }: { stock: StockSprite }) {
     .split(/[·、,，/]/)
     .map((s) => s.trim())
     .filter(Boolean)
+  const approx = REVENUE_MIX[stock.id] ?? []
 
   return (
     <section className="revenue-mix">
       <h3>
         营收构成
-        {data ? (
-          <small>
-            {data.reportDate} · {data.typeLabel}
-          </small>
-        ) : null}
+        <small>
+          {data
+            ? `${data.reportDate} · ${data.typeLabel}`
+            : approx.length
+              ? '图鉴整理 · 约数'
+              : '主要业务板块'}
+        </small>
       </h3>
       {loading ? <p className="fine">正在读取财报主营构成…</p> : null}
       {data ? (
@@ -75,14 +79,33 @@ export function RevenueMix({ stock }: { stock: StockSprite }) {
           ))}
         </ul>
       ) : !loading ? (
-        <>
-          <ul className="mix-tags">
-            {sectors.map((s) => (
-              <li key={s}>{s}</li>
-            ))}
-          </ul>
-          <p className="fine">主要业务板块（图鉴整理，非财报口径）。</p>
-        </>
+        approx.length ? (
+          <>
+            <ul className="mix-list">
+              {approx.map((item) => (
+                <li key={item.name}>
+                  <div className="mix-row">
+                    <b>{item.name}</b>
+                    <span>约 {item.ratio}%</span>
+                  </div>
+                  <div className="mix-bar">
+                    <i style={{ width: `${Math.max(1, Math.min(100, item.ratio))}%` }} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="fine">按近年公开财报业务结构整理的约数，非精确财报口径。</p>
+          </>
+        ) : (
+          <>
+            <ul className="mix-tags">
+              {sectors.map((s) => (
+                <li key={s}>{s}</li>
+              ))}
+            </ul>
+            <p className="fine">主要业务板块（图鉴整理，暂无占比数据）。</p>
+          </>
+        )
       ) : null}
     </section>
   )
