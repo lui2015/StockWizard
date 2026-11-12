@@ -394,7 +394,7 @@ export async function fetchLiveQuote(quoteId: string): Promise<LiveQuote | null>
   }
 }
 
-export type TapeGroup = 'CN' | 'HK' | 'US'
+export type TapeGroup = 'CN' | 'HK' | 'US' | 'EU' | 'APAC'
 
 export interface TapeIndex {
   id: string
@@ -419,6 +419,20 @@ const TAPE_LIST: { id: string; group: TapeGroup; name: string; bar: string }[] =
   { id: '100.DJIA', group: 'US', name: '道琼斯', bar: 'usDJI' },
   { id: '100.NDX', group: 'US', name: '纳斯达克', bar: 'usIXIC' },
   { id: '100.SPX', group: 'US', name: '标普500', bar: 'usINX' },
+  // 欧洲（东财 push2 / push2his 数据源，bar 用 em:<secid>）
+  { id: '100.FTSE', group: 'EU', name: '英国富时100', bar: 'em:100.FTSE' },
+  { id: '100.GDAXI', group: 'EU', name: '德国DAX', bar: 'em:100.GDAXI' },
+  { id: '100.FCHI', group: 'EU', name: '法国CAC40', bar: 'em:100.FCHI' },
+  { id: '100.SX5E', group: 'EU', name: '欧洲斯托克50', bar: 'em:100.SX5E' },
+  { id: '100.RTS', group: 'EU', name: '俄罗斯RTS', bar: 'em:100.RTS' },
+  // 亚太
+  { id: '100.N225', group: 'APAC', name: '日经225', bar: 'em:100.N225' },
+  { id: '100.KS11', group: 'APAC', name: '韩国KOSPI', bar: 'em:100.KS11' },
+  { id: '100.AS51', group: 'APAC', name: '澳洲标普200', bar: 'em:100.AS51' },
+  { id: '100.SENSEX', group: 'APAC', name: '印度SENSEX', bar: 'em:100.SENSEX' },
+  { id: '100.TWII', group: 'APAC', name: '台湾加权', bar: 'em:100.TWII' },
+  { id: '100.STI', group: 'APAC', name: '新加坡海峡时报', bar: 'em:100.STI' },
+  { id: '100.VNINDEX', group: 'APAC', name: '越南胡志明', bar: 'em:100.VNINDEX' },
 ]
 
 export const TAPE_BARS = Object.fromEntries(TAPE_LIST.map((item) => [item.id, item.bar]))

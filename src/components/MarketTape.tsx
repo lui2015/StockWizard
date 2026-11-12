@@ -9,6 +9,8 @@ const GROUPS: { id: TapeGroup; label: string }[] = [
   { id: 'CN', label: 'A股' },
   { id: 'HK', label: '港股' },
   { id: 'US', label: '美股' },
+  { id: 'EU', label: '欧洲' },
+  { id: 'APAC', label: '亚太' },
 ]
 
 export function MarketTape() {

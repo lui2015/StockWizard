@@ -425,6 +425,51 @@ async function fetchStockNews(secid) {
   return data
 }
 
+/** 全球指数（secid 100.* / 124.*）：东财 push2 ulist，带多域名兜底 */
+async function fetchGlobalIndexUlist(ids, query) {
+  const fields = query.get('fields') || 'f12,f13,f14,f2,f3,f4,f18'
+  const qs = `?fltt=2&invt=2&fields=${encodeURIComponent(fields)}&secids=${encodeURIComponent(ids.join(','))}`
+  const targets = [
+    'https://push2delay.eastmoney.com/api/qt/ulist.np/get',
+    'https://push2.eastmoney.com/api/qt/ulist.np/get',
+    'https://79.push2.eastmoney.com/api/qt/ulist.np/get',
+  ]
+  for (const target of targets) {
+    try {
+      const upstream = await fetch(`${target}${qs}`, {
+        headers: UPSTREAM_HEADERS,
+        signal: AbortSignal.timeout(6000),
+      })
+      const body = await upstream.text()
+      if (!upstream.ok || !body || body.trimStart().startsWith('<')) continue
+      const json = JSON.parse(body)
+      const diff = json?.data?.diff
+      if (diff && (Array.isArray(diff) ? diff.length : Object.keys(diff).length)) return json
+    } catch {
+      // 换下一个域名
+    }
+  }
+  return { data: { diff: [] } }
+}
+
+/** 全球指数分时 → 东财 trends 格式 */
+async function emIndexTrends(secid, query) {
+  const qs = new URLSearchParams({
+    secid,
+    fields1: 'f1,f2,f3,f4,f5,f6,f7,f8',
+    fields2: 'f51,f52,f53,f54,f55,f56,f57,f58',
+    ndays: query.get('ndays') || '1',
+    iscr: query.get('iscr') || '0',
+  })
+  const upstream = await fetch(`https://push2his.eastmoney.com/api/qt/stock/trends2/get?${qs}`, {
+    headers: UPSTREAM_HEADERS,
+    signal: AbortSignal.timeout(8000),
+  })
+  if (!upstream.ok) throw new Error(`em trends ${upstream.status}`)
+  const json = await upstream.json()
+  return { data: { trends: json?.data?.trends ?? [], preClose: json?.data?.preClose } }
+}
+
 /** 批量行情 → 东财 ulist 格式 */
 async function tencentUlist(secids) {
   const ids = String(secids ?? '')
@@ -514,6 +559,49 @@ export function createRadarMiddleware() {
       const query = new URLSearchParams(req.url.slice(req.url.indexOf('?') + 1))
       const symbol = query.get('symbol') ?? ''
       const period = query.get('period') ?? 'day'
+
+      // 全球指数（em:<secid>）：东财 push2his K 线，转成腾讯 K 线格式给前端复用
+      if (symbol.startsWith('em:')) {
+        try {
+          let body
+          if (period === 'day5') {
+            body = JSON.stringify({ code: 0, data: { [symbol]: { data: {} } } })
+          } else {
+            const secid = symbol.slice(3)
+            const klt = period === 'week' ? 102 : period === 'month' ? 103 : 101
+            const asked = Number(query.get('lmt'))
+            const lmt = Number.isFinite(asked) ? Math.min(1300, Math.max(20, Math.round(asked))) : 250
+            const qs = new URLSearchParams({
+              secid,
+              fields1: 'f1,f2,f3,f4,f5,f6',
+              fields2: 'f51,f52,f53,f54,f55,f56,f57,f58',
+              klt: String(klt),
+              fqt: '1',
+              lmt: String(lmt),
+              end: '20500101',
+            })
+            const upstream = await fetch(`https://push2his.eastmoney.com/api/qt/stock/kline/get?${qs}`, {
+              headers: UPSTREAM_HEADERS,
+              signal: AbortSignal.timeout(8000),
+            })
+            const json = await upstream.json()
+            const rows = (json?.data?.klines ?? []).map((line) => {
+              const p = String(line).split(',')
+              return [p[0], p[1], p[2], p[3], p[4], p[5] ?? 0]
+            })
+            const key = period === 'week' ? 'qfqweek' : period === 'month' ? 'qfqmonth' : 'qfqday'
+            body = JSON.stringify({ code: 0, data: { [symbol]: { [key]: rows } } })
+          }
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'application/json; charset=utf-8')
+          res.end(body)
+        } catch (error) {
+          res.statusCode = 502
+          res.setHeader('Content-Type', 'application/json; charset=utf-8')
+          res.end(JSON.stringify({ error: 'index kline failed', detail: String(error) }))
+        }
+        return
+      }
 
       // 五日分时：腾讯按天返回分钟线
       if (period === 'day5') {
@@ -649,9 +737,28 @@ export function createRadarMiddleware() {
             payload = null
           }
         } else if (url === '/radar/ulist') {
-          payload = await tencentUlist(query.get('secids') ?? '')
+          const ids = String(query.get('secids') ?? '')
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+          const indexIds = ids.filter((s) => /^(100|124)\./.test(s))
+          const stockIds = ids.filter((s) => !/^(100|124)\./.test(s))
+          const [tx, em] = await Promise.all([
+            stockIds.length
+              ? tencentUlist(stockIds.join(',')).catch(() => ({ data: { diff: [] } }))
+              : { data: { diff: [] } },
+            indexIds.length
+              ? fetchGlobalIndexUlist(indexIds, query).catch(() => ({ data: { diff: [] } }))
+              : { data: { diff: [] } },
+          ])
+          payload = {
+            data: { diff: [...(tx.data?.diff ?? []), ...(em.data?.diff ?? [])] },
+          }
         } else if (url === '/radar/trends') {
-          payload = await tencentTrends(query.get('secid') ?? '')
+          const secid = query.get('secid') ?? ''
+          payload = /^(100|124)\./.test(secid)
+            ? await emIndexTrends(secid, query)
+            : await tencentTrends(secid)
         } else if (url === '/radar/news') {
           const news = await fetchStockNews(query.get('secid') ?? '').catch(() => null)
           payload = news ? { data: { list: news } } : null
