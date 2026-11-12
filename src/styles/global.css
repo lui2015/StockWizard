@@ -1930,9 +1930,9 @@ a.tiny {
 
 .party-fund {
   display: grid;
-  grid-template-columns: repeat(4, auto);
+  grid-template-columns: repeat(5, auto);
   align-items: start;
-  column-gap: 14px;
+  column-gap: 12px;
   min-width: 0;
   padding-right: 12px;
   border-right: 3px dashed #cfc6b0;
@@ -3462,20 +3462,20 @@ a.tiny {
   }
 
   .party-fund {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     padding-right: 0;
     border-right: none;
-    column-gap: 8px;
+    column-gap: 4px;
     row-gap: 0;
     justify-items: start;
   }
 
   .party-fund small {
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .party-fund b {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .party-pnl {

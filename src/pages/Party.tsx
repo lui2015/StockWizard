@@ -292,6 +292,10 @@ export function Party() {
                       <b>{formatPercent(quote.dividendYield)}</b>
                     </span>
                     <span>
+                      <small>ROE</small>
+                      <b>{formatPercent(quote.roe)}</b>
+                    </span>
+                    <span>
                       <small>五年中位</small>
                       <b>{mid5y == null ? '—' : formatPrice(mid5y)}</b>
                     </span>
