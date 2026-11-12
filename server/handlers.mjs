@@ -751,9 +751,32 @@ export function createRadarMiddleware() {
               ? fetchGlobalIndexUlist(indexIds, query).catch(() => ({ data: { diff: [] } }))
               : { data: { diff: [] } },
           ])
-          payload = {
-            data: { diff: [...(tx.data?.diff ?? []), ...(em.data?.diff ?? [])] },
+          const rows = [...(tx.data?.diff ?? []), ...(em.data?.diff ?? [])]
+          // 批量行情（腾讯报价）没有 ROE/EPS/利润率等 F10 字段，个股按需补全；
+          // 指数（1.000* / 0.399*）与全球指数跳过，结果按 secid 缓存 1 小时。
+          const enrichIds = stockIds.filter(
+            (s) => /^(1|0|90|116|128)\./.test(s) && !/^(1\.000|0\.399)/.test(s),
+          )
+          if (enrichIds.length) {
+            const byId = new Map(rows.map((r) => [`${r.f13}.${r.f12}`, r]))
+            const fill = async (secid) => {
+              const row = byId.get(secid)
+              if (!row) return
+              const f10 = await fetchF10Fundamentals(secid, Number(row.f2) || 0).catch(() => null)
+              if (!f10) return
+              for (const key of ['f173', 'f108', 'f109', 'f183', 'f186', 'f187']) {
+                const value = f10[key]
+                if (value != null && value !== '-' && (row[key] == null || row[key] === '-')) {
+                  row[key] = value
+                }
+              }
+            }
+            // 每批 8 只，避免首次加载对上游发起过多并发请求
+            for (let i = 0; i < Math.min(enrichIds.length, 40); i += 8) {
+              await Promise.all(enrichIds.slice(i, i + 8).map(fill))
+            }
           }
+          payload = { data: { diff: rows } }
         } else if (url === '/radar/trends') {
           const secid = query.get('secid') ?? ''
           payload = /^(100|124)\./.test(secid)
