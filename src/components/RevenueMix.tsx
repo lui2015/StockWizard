@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/base'
 import { quoteIdOf } from '../utils/quoteId'
 import { formatMoney } from '../utils/quotes'
-import { REVENUE_MIX } from '../data/revenueMix'
+import { guessRevenueMix } from '../data/revenueMix'
 import type { StockSprite } from '../data/types'
 
 interface MixItem {
@@ -47,7 +47,8 @@ export function RevenueMix({ stock }: { stock: StockSprite }) {
     .split(/[·、,，/]/)
     .map((s) => s.trim())
     .filter(Boolean)
-  const approx = REVENUE_MIX[stock.id] ?? []
+  const guess = guessRevenueMix(stock)
+  const approx = guess?.slices ?? []
 
   return (
     <section className="revenue-mix">
@@ -56,9 +57,11 @@ export function RevenueMix({ stock }: { stock: StockSprite }) {
         <small>
           {data
             ? `${data.reportDate} · ${data.typeLabel}`
-            : approx.length
+            : guess?.kind === 'report'
               ? '图鉴整理 · 约数'
-              : '主要业务板块'}
+              : guess?.kind === 'industry'
+                ? '行业典型结构 · 估算'
+                : '主要业务板块'}
         </small>
       </h3>
       {loading ? <p className="fine">正在读取财报主营构成…</p> : null}
@@ -94,7 +97,11 @@ export function RevenueMix({ stock }: { stock: StockSprite }) {
                 </li>
               ))}
             </ul>
-            <p className="fine">按近年公开财报业务结构整理的约数，非精确财报口径。</p>
+            <p className="fine">
+              {guess?.kind === 'industry'
+                ? '该股票暂无公开分部财报，按同行业典型业务结构估算，仅供参考。'
+                : '按近年公开财报业务结构整理的约数，非精确财报口径。'}
+            </p>
           </>
         ) : (
           <>
