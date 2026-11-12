@@ -717,6 +717,82 @@ a.tiny {
   gap: 8px;
 }
 
+/* 公司档案：营收构成 */
+.revenue-mix {
+  border: 3px solid var(--ink);
+  background: #fff;
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.revenue-mix h3 {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.revenue-mix h3 small {
+  font-size: 10px;
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+.revenue-mix .mix-list {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.revenue-mix .mix-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.revenue-mix .mix-row b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.revenue-mix .mix-row span {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+.revenue-mix .mix-bar {
+  height: 7px;
+  border: 2px solid var(--ink);
+  background: #f4efe2;
+  margin-top: 3px;
+}
+
+.revenue-mix .mix-bar i {
+  display: block;
+  height: 100%;
+  background: #5b8def;
+}
+
+.revenue-mix .mix-tags {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.revenue-mix .mix-tags li {
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
 /* 猜涨跌 */
 .guess-stats {
   display: grid;

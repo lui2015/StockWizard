@@ -339,6 +339,56 @@ async function fetchVolumeRatio(secid) {
   return data
 }
 
+// 营收构成：A股 F10 经营分析（主营构成 zygcfx），港股/美股无结构化数据，返回 null
+const businessCache = new Map() // secid -> { ts, data }
+const BUSINESS_TTL = 60 * 60 * 1000
+
+async function fetchBusinessMix(secid) {
+  const cached = businessCache.get(secid)
+  if (cached && Date.now() - cached.ts < BUSINESS_TTL) return cached.data
+  const dot = String(secid ?? '').indexOf('.')
+  const mkt = String(secid ?? '').slice(0, dot)
+  const code = String(secid ?? '').slice(dot + 1)
+  if (!['1', '0', '90'].includes(mkt) || !code) return null
+  const secu = `${mkt === '1' ? 'SH' : mkt === '0' ? 'SZ' : 'BJ'}${code}`
+  const res = await fetch(
+    `https://emweb.securities.eastmoney.com/PC_HSF10/BusinessAnalysis/PageAjax?code=${secu}`,
+    {
+      headers: {
+        'User-Agent': UA,
+        Accept: 'application/json',
+        Referer: 'https://emweb.securities.eastmoney.com/',
+      },
+      signal: AbortSignal.timeout(8000),
+    },
+  )
+  if (!res.ok) throw new Error(`business ${res.status}`)
+  const json = await res.json()
+  const rows = (json?.zygcfx ?? []).filter((r) => r && r.ITEM_NAME)
+  if (!rows.length) return null
+  const latest = rows.reduce((a, b) => (String(b.REPORT_DATE ?? '') > String(a.REPORT_DATE ?? '') ? b : a))
+  const periodRows = rows.filter((r) => r.REPORT_DATE === latest.REPORT_DATE)
+  const typeOrder = ['2', '1', '3']
+  const chosen =
+    typeOrder.map((t) => periodRows.filter((r) => String(r.MAINOP_TYPE) === t)).find((list) => list.length) ?? periodRows
+  const items = chosen
+    .map((r) => ({
+      name: String(r.ITEM_NAME),
+      income: Number(r.MAIN_BUSINESS_INCOME) || 0,
+      ratio: Number(r.MBI_RATIO) * 100 || 0,
+    }))
+    .sort((a, b) => b.ratio - a.ratio)
+    .slice(0, 6)
+  const typeLabel = { 1: '按行业', 2: '按产品', 3: '按地区' }[String(chosen[0]?.MAINOP_TYPE)] ?? '主营构成'
+  const data = {
+    reportDate: String(latest.REPORT_DATE ?? '').slice(0, 10),
+    typeLabel,
+    items,
+  }
+  businessCache.set(secid, { ts: Date.now(), data })
+  return data
+}
+
 // 个股资讯：东财 np-listapi 开放接口代理（缓存 10 分钟）
 const newsCache = new Map() // secid -> { ts, data }
 const NEWS_TTL = 10 * 60 * 1000
@@ -572,7 +622,8 @@ export function createRadarMiddleware() {
         url === '/radar/ulist' ||
         url === '/radar/trends' ||
         url === '/radar/kline' ||
-        url === '/radar/news')
+        url === '/radar/news' ||
+        url === '/radar/business')
     ) {
       const query = new URLSearchParams(
         req.url?.includes('?') ? req.url.slice(req.url.indexOf('?') + 1) : '',
@@ -604,6 +655,9 @@ export function createRadarMiddleware() {
         } else if (url === '/radar/news') {
           const news = await fetchStockNews(query.get('secid') ?? '').catch(() => null)
           payload = news ? { data: { list: news } } : null
+        } else if (url === '/radar/business') {
+          const mix = await fetchBusinessMix(query.get('secid') ?? '').catch(() => null)
+          payload = mix ? { data: mix } : null
         } else {
           payload = await tencentKline(query.get('secid') ?? '', Number(query.get('lmt')))
         }

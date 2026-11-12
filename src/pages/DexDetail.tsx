@@ -1,5 +1,6 @@
 import { DialogBox } from '../components/DialogBox'
 import { Fundamentals } from '../components/Fundamentals'
+import { RevenueMix } from '../components/RevenueMix'
 import { PortraitIntro } from '../components/PortraitIntro'
 import { ReportLinks } from '../components/ReportLinks'
 import { PriceAlertPanel } from '../components/PriceAlertPanel'
@@ -115,6 +116,7 @@ export function DexDetail({ id, tab = 'dex' }: { id: string; tab?: 'dex' | 'obse
               </p>
               <Fundamentals quote={quote} />
               <DialogBox speaker="公司档案" text={stock.dexText} />
+              <RevenueMix stock={stock} />
               <p className="ability">
                 观察要点「{stock.ability}」：{stock.abilityDesc}
               </p>
