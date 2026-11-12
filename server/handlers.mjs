@@ -41,10 +41,44 @@ const UPSTREAM_HEADERS = {
 
 // ===== 腾讯行情适配层 =====
 // 东财 push2 系列行情接口在本机被 WAF 封禁（API 路径连接被秒断），
-// 改用腾讯行情（qt.gtimg.cn / web.ifzq.gtimg.cn）作为主数据源，
+// 改用腾讯行情（qt.gtimg.cn / ifzq.gtimg.cn，备用 proxy.finance.qq.com）作为主数据源，
 // 并把响应转换成东财字段格式（f43/f58/f116...），前端无需任何改动。
 
 const TX_HEADERS = { 'User-Agent': UA, Referer: 'https://gu.qq.com/' }
+
+// 腾讯 K 线/分时接口域名：web.ifzq 域名曾被 WAF 整站拦截（返回 501 HTML），
+// 这里按可用性自动切换，命中 WAF 页时立即换下一个域名重试。
+const TX_APP_BASES = [
+  'https://ifzq.gtimg.cn/appstock/app',
+  'https://proxy.finance.qq.com/ifzqgtimg/appstock/app',
+  'https://web.ifzq.gtimg.cn/appstock/app',
+]
+
+async function fetchTxText(path, qs) {
+  let lastError
+  for (const base of TX_APP_BASES) {
+    try {
+      const upstream = await fetch(`${base}/${path}?${qs}`, {
+        headers: TX_HEADERS,
+        signal: AbortSignal.timeout(8000),
+      })
+      const body = await upstream.text()
+      if (!upstream.ok || !body || body.trimStart().startsWith('<')) {
+        lastError = new Error(`${base} ${upstream.status}`)
+        continue
+      }
+      return { status: upstream.status, body }
+    } catch (error) {
+      lastError = error
+    }
+  }
+  throw lastError ?? new Error('no tx kline upstream')
+}
+
+async function fetchTxApp(path, qs) {
+  const { body } = await fetchTxText(path, qs)
+  return JSON.parse(body)
+}
 
 /** 东财 secid（1.600519 / 116.00700 / 105.AAPL / 100.HSI）→ 腾讯行情代码 */
 function txCodeOf(secid) {
@@ -291,15 +325,8 @@ async function fetchVolumeRatio(secid) {
   if (cached && Date.now() - cached.ts < VR_TTL) return cached.data
   const code = txCodeOf(secid)
   if (!code) throw new Error('bad secid')
-  const host = code.startsWith('us')
-    ? 'https://web.ifzq.gtimg.cn/appstock/app/usfqkline/get'
-    : 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get'
-  const res = await fetch(`${host}?param=${encodeURIComponent(`${code},day,,,6,qfq`)}`, {
-    headers: TX_HEADERS,
-    signal: AbortSignal.timeout(8000),
-  })
-  if (!res.ok) throw new Error(`vr ${res.status}`)
-  const json = await res.json()
+  const path = code.startsWith('us') ? 'usfqkline/get' : 'fqkline/get'
+  const json = await fetchTxApp(path, `param=${encodeURIComponent(`${code},day,,,6,qfq`)}`)
   const pack = json?.data?.[code] ?? {}
   const rows = (pack.qfqday ?? pack.day ?? []).filter((r) => Array.isArray(r))
   const vols = rows.map((r) => Number(r[5]) || 0).filter((v) => v > 0)
@@ -371,12 +398,7 @@ async function tencentUlist(secids) {
 async function tencentTrends(secid) {
   const code = txCodeOf(secid)
   if (!code) throw new Error('bad secid')
-  const res = await fetch(
-    `https://web.ifzq.gtimg.cn/appstock/app/minute/query?code=${encodeURIComponent(code)}`,
-    { headers: TX_HEADERS, signal: AbortSignal.timeout(8000) },
-  )
-  if (!res.ok) throw new Error(`minute/query ${res.status}`)
-  const json = await res.json()
+  const json = await fetchTxApp('minute/query', `code=${encodeURIComponent(code)}`)
   const pack = json?.data?.[code]
   const lines = pack?.data?.data ?? []
   const dateRaw = String(pack?.data?.date ?? '')
@@ -401,15 +423,8 @@ async function tencentKline(secid, askedLmt) {
   const code = txCodeOf(secid)
   if (!code) throw new Error('bad secid')
   const n = Math.min(120, Math.max(5, Number.isFinite(askedLmt) ? askedLmt : 20))
-  const host = code.startsWith('us')
-    ? 'https://web.ifzq.gtimg.cn/appstock/app/usfqkline/get'
-    : 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get'
-  const res = await fetch(
-    `${host}?param=${encodeURIComponent(`${code},day,,,${n},qfq`)}`,
-    { headers: TX_HEADERS, signal: AbortSignal.timeout(8000) },
-  )
-  if (!res.ok) throw new Error(`fqkline ${res.status}`)
-  const json = await res.json()
+  const path = code.startsWith('us') ? 'usfqkline/get' : 'fqkline/get'
+  const json = await fetchTxApp(path, `param=${encodeURIComponent(`${code},day,,,${n},qfq`)}`)
   const pack = json?.data?.[code] ?? {}
   const rows = pack.qfqday ?? pack.day ?? []
   const klines = rows
@@ -453,15 +468,8 @@ export function createRadarMiddleware() {
       // 五日分时：腾讯按天返回分钟线
       if (period === 'day5') {
         try {
-          const upstream = await fetch(
-            `https://web.ifzq.gtimg.cn/appstock/app/day/query?code=${encodeURIComponent(symbol)}`,
-            {
-              headers: { ...UPSTREAM_HEADERS, Referer: 'https://gu.qq.com/' },
-              signal: AbortSignal.timeout(8000),
-            },
-          )
-          const body = await upstream.text()
-          res.statusCode = upstream.status
+          const { status, body } = await fetchTxText('day/query', `code=${encodeURIComponent(symbol)}`)
+          res.statusCode = status
           res.setHeader('Content-Type', 'application/json; charset=utf-8')
           res.setHeader('Cache-Control', 'public, max-age=60')
           res.end(body)
@@ -476,19 +484,13 @@ export function createRadarMiddleware() {
       const asked = Number(query.get('lmt'))
       const fallback = period === 'day' ? 100 : period === 'week' ? 72 : 48
       const lmt = Number.isFinite(asked) ? Math.min(1300, Math.max(20, Math.round(asked))) : fallback
-      const host = symbol.startsWith('us')
-        ? 'https://web.ifzq.gtimg.cn/appstock/app/usfqkline/get'
-        : 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get'
+      const path = symbol.startsWith('us') ? 'usfqkline/get' : 'fqkline/get'
       try {
-        const upstream = await fetch(
-          `${host}?param=${encodeURIComponent(`${symbol},${period},,,${lmt},qfq`)}`,
-          {
-            headers: { ...UPSTREAM_HEADERS, Referer: 'https://gu.qq.com/' },
-            signal: AbortSignal.timeout(8000),
-          },
+        const { status, body } = await fetchTxText(
+          path,
+          `param=${encodeURIComponent(`${symbol},${period},,,${lmt},qfq`)}`,
         )
-        const body = await upstream.text()
-        res.statusCode = upstream.status
+        res.statusCode = status
         res.setHeader('Content-Type', 'application/json; charset=utf-8')
         res.end(body)
       } catch (error) {
