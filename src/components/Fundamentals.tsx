@@ -13,6 +13,8 @@ export function Fundamentals({ quote }: { quote: Quote }) {
     { label: '股息率', value: quote.dividendYield != null && quote.dividendYield > 0 ? formatPercent(quote.dividendYield) : '—' },
     { label: '毛利率', value: quote.grossMargin != null ? formatPercent(quote.grossMargin) : '—' },
     { label: '净利率', value: quote.netMargin != null ? formatPercent(quote.netMargin) : '—' },
+    { label: 'ROE', value: quote.roe != null ? formatPercent(quote.roe) : '—' },
+    { label: '每股收益', value: quote.eps != null ? `${formatRatio(quote.eps)} 元` : '—' },
     { label: '营业收入', value: quote.revenue && quote.revenue > 0 ? formatMoney(quote.revenue) : '—' },
     { label: '总市值', value: quote.marketCap && quote.marketCap > 0 ? formatMoney(quote.marketCap) : '—' },
   ]
